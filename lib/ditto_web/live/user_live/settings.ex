@@ -41,6 +41,50 @@ defmodule DittoWeb.UserLive.Settings do
 
       <div class="divider" />
 
+      <%!-- Organization info --%>
+      <div>
+        <h2 class="text-lg font-semibold mb-3">Organization</h2>
+        <%= if @current_scope.user.is_sysadmin do %>
+          <div class="flex items-center gap-3 p-4 rounded-lg bg-base-200">
+            <div>
+              <p class="font-medium">System Administrator</p>
+              <p class="text-sm text-base-content/60">
+                Full access across all organizations.
+              </p>
+            </div>
+            <span class="badge badge-error badge-sm ml-auto">Sysadmin</span>
+          </div>
+          <div class="mt-2">
+            <.link navigate={~p"/sysadmin"} class="link link-primary text-sm">
+              Go to Sysadmin Dashboard →
+            </.link>
+          </div>
+        <% else %>
+          <%= if org = @current_scope.organization do %>
+            <div class="flex items-center justify-between p-4 rounded-lg bg-base-200">
+              <div>
+                <p class="font-medium">{org.name}</p>
+                <p class="text-sm text-base-content/60">/{org.slug}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="badge badge-neutral badge-sm capitalize">
+                  {@current_scope.user.role}
+                </span>
+                <.link navigate={~p"/orgs/#{org.slug}/dashboard"} class="link link-primary text-sm">
+                  Dashboard →
+                </.link>
+              </div>
+            </div>
+          <% else %>
+            <div class="p-4 rounded-lg bg-base-200 text-base-content/60 text-sm">
+              You are not a member of any organization.
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+      <div class="divider" />
+
       <.form for={@email_form} id="email_form" phx-submit="update_email" phx-change="validate_email">
         <.input
           field={@email_form[:email]}

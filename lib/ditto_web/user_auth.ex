@@ -231,9 +231,14 @@ defmodule DittoWeb.UserAuth do
   end
 
   def on_mount(:verify_organization_access, %{"org" => slug}, _session, socket) do
-    current_user = socket.assigns.current_scope && socket.assigns.current_scope.user
+    current_scope = socket.assigns.current_scope
+    current_user = current_scope && current_scope.user
 
     case Accounts.get_organization_by_slug(slug) do
+      %Accounts.Organization{} = org when not is_nil(current_user) and current_user.is_sysadmin ->
+        # Sysadmins can access any org; set the org in scope for context
+        {:cont, Phoenix.Component.assign(socket, :current_scope, %{current_scope | organization: org})}
+
       %Accounts.Organization{id: org_id} when not is_nil(current_user) and org_id == current_user.organization_id ->
         {:cont, socket}
 
@@ -296,6 +301,10 @@ defmodule DittoWeb.UserAuth do
   end
 
   @doc "Returns the path to redirect to after log in."
+  def signed_in_path(%Plug.Conn{assigns: %{current_scope: %Scope{user: %Accounts.User{is_sysadmin: true}}}}) do
+    ~p"/sysadmin"
+  end
+
   def signed_in_path(%Plug.Conn{assigns: %{current_scope: %Scope{user: user, organization: org}}})
       when not is_nil(user) and not is_nil(org) do
     ~p"/orgs/#{org.slug}/dashboard"
@@ -320,7 +329,11 @@ defmodule DittoWeb.UserAuth do
       current_user = current_scope && current_scope.user
 
       case Accounts.get_organization_by_slug(slug) do
-        %Accounts.Organization{id: org_id} when not is_nil(current_user) and org_id == current_user.organization_id ->
+        %Accounts.Organization{} = org when not is_nil(current_user) and current_user.is_sysadmin ->
+          # Sysadmins can access any org; update scope so org context is set
+          assign(conn, :current_scope, %{current_scope | organization: org})
+
+        %Accounts.Organization{id: org_id} = _org when not is_nil(current_user) and org_id == current_user.organization_id ->
           conn
 
         %Accounts.Organization{} ->
