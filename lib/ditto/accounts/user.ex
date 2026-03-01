@@ -31,6 +31,15 @@ defmodule Ditto.Accounts.User do
   end
 
   @doc """
+  A user changeset for updating the profile (name only; username is immutable).
+  """
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name])
+    |> validate_length(:name, max: 100)
+  end
+
+  @doc """
   A user changeset for registering or changing the email.
 
   It requires the email to change otherwise an error is added.
