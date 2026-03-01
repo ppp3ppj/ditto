@@ -1,0 +1,23 @@
+{
+  "name": "ditto",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./css/app.css -o ../priv/static/assets/css/app.css",
+    "watch:css": "tailwindcss -i ./css/app.css -o ../priv/static/assets/css/app.css --watch",
+    "deploy:css": "tailwindcss -i ./css/app.css -o ../priv/static/assets/css/app.css --minify",
+    "build:js": "NODE_PATH=../_build/dev:../deps   bun build ./js/app.js --outdir ../priv/static/assets/js --sourcemap=inline --target browser",
+    "watch:js": "NODE_PATH=../_build/dev:../deps   bun build ./js/app.js --outdir ../priv/static/assets/js --sourcemap=inline --target browser --watch",
+    "deploy:js": "NODE_PATH=../_build/prod:../deps  bun build ./js/app.js --outdir ../priv/static/assets/js --target browser --minify"
+  },
+  "dependencies": {
+    "heroicons": "^2.2.0",
+    "phoenix": "file:../deps/phoenix",
+    "phoenix_html": "file:../deps/phoenix_html",
+    "phoenix_live_view": "file:../deps/phoenix_live_view",
+    "tailwindcss": "^4.2.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.1"
+  }
+}
