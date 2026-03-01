@@ -1,9 +1,15 @@
 import { defineConfig } from "vite"
 import tailwindcss from "@tailwindcss/vite"
+import autoprefixer from "autoprefixer"
 import path from "path"
 
 export default defineConfig(({ mode }) => ({
   plugins: [tailwindcss(), resumeStdinPlugin()],
+  css: {
+    postcss: {
+      plugins: [autoprefixer()]
+    }
+  },
   publicDir: false,
   build: {
     target: "es2022",
