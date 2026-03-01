@@ -82,6 +82,12 @@ defmodule Ditto.MixProject do
         "bun assets run deploy",
         "phx.digest"
       ],
+      "prod.build": [
+        "deps.get --only prod",
+        "compile",
+        "assets.deploy",
+        "release"
+      ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end
