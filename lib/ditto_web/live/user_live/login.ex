@@ -34,8 +34,8 @@ defmodule DittoWeb.UserLive.Login do
           <.input
             readonly={!!@current_scope}
             field={f[:email]}
-            type="email"
-            label="Email"
+            type="text"
+            label="Email or username"
             autocomplete="username"
             spellcheck="false"
             required

@@ -6,6 +6,8 @@ defmodule Ditto.Accounts.User do
   @foreign_key_type :binary_id
   schema "users" do
     field :email, :string
+    field :username, :string
+    field :name, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
@@ -21,8 +23,9 @@ defmodule Ditto.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :username, :name, :password])
     |> validate_email(opts)
+    |> validate_username(opts)
     |> validate_password(opts)
     |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end
@@ -66,6 +69,25 @@ defmodule Ditto.Accounts.User do
   defp validate_email_changed(changeset) do
     if get_field(changeset, :email) && get_change(changeset, :email) == nil do
       add_error(changeset, :email, "did not change")
+    else
+      changeset
+    end
+  end
+
+  defp validate_username(changeset, opts) do
+    changeset =
+      changeset
+      |> validate_required([:username])
+      |> validate_length(:username, min: 3, max: 39)
+      |> validate_format(:username, ~r/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/,
+        message: "must start with a letter or number and only contain letters, numbers, _ or -"
+      )
+      |> update_change(:username, &String.downcase/1)
+
+    if Keyword.get(opts, :validate_unique, true) do
+      changeset
+      |> unsafe_validate_unique(:username, Ditto.Repo)
+      |> unique_constraint(:username)
     else
       changeset
     end

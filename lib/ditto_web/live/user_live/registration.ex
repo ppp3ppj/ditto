@@ -27,10 +27,24 @@ defmodule DittoWeb.UserLive.Registration do
             field={@form[:email]}
             type="email"
             label="Email"
-            autocomplete="username"
+            autocomplete="email"
             spellcheck="false"
             required
             phx-mounted={JS.focus()}
+          />
+          <.input
+            field={@form[:username]}
+            type="text"
+            label="Username"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+          <.input
+            field={@form[:name]}
+            type="text"
+            label="Name (optional)"
+            autocomplete="name"
           />
           <.input
             field={@form[:password]}

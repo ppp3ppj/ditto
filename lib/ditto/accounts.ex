@@ -38,9 +38,15 @@ defmodule Ditto.Accounts do
       nil
 
   """
-  def get_user_by_email_and_password(email, password)
-      when is_binary(email) and is_binary(password) do
-    user = Repo.get_by(User, email: email)
+  def get_user_by_email_and_password(identifier, password)
+      when is_binary(identifier) and is_binary(password) do
+    user =
+      if String.contains?(identifier, "@") do
+        Repo.get_by(User, email: identifier)
+      else
+        Repo.get_by(User, username: String.downcase(identifier))
+      end
+
     if User.valid_password?(user, password), do: user
   end
 
