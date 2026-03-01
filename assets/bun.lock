@@ -6,10 +6,10 @@
       "name": "assets",
       "dependencies": {
         "daisyui": "^5.5.19",
-        "heroicons": "^2.2.0",
         "phoenix": "file:../deps/phoenix",
         "phoenix_html": "file:../deps/phoenix_html",
         "phoenix_live_view": "file:../deps/phoenix_live_view",
+        "remixicon": "^4.9.1",
         "tailwindcss": "^4.2.1",
       },
       "devDependencies": {
@@ -844,8 +844,6 @@
 
     "he": ["he@1.2.0", "", { "bin": { "he": "bin/he" } }, "sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw=="],
 
-    "heroicons": ["heroicons@2.2.0", "", {}, "sha512-yOwvztmNiBWqR946t+JdgZmyzEmnRMC2nxvHFC90bF1SUttwB6yJKYeme1JeEcBfobdOs827nCyiWBS2z/brog=="],
-
     "highlight.js": ["highlight.js@11.11.1", "", {}, "sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w=="],
 
     "hosted-git-info": ["hosted-git-info@4.1.0", "", { "dependencies": { "lru-cache": "^6.0.0" } }, "sha512-kyCuEOWjJqZuDbRHzL8V93NzQhwIB71oFWSyzVo+KPZI+pnQPPxucdkrOZvkLRnrf5URsQM+IJ09Dw29cRALIA=="],
@@ -1333,6 +1331,8 @@
     "remark-stringify": ["remark-stringify@10.0.3", "", { "dependencies": { "@types/mdast": "^3.0.0", "mdast-util-to-markdown": "^1.0.0", "unified": "^10.0.0" } }, "sha512-koyOzCMYoUHudypbj4XpnAKFbkddRMYZHwghnxd7ue5210WzGw6kOBwauJTRUMq16jsovXx8dYNvSSWP89kZ3A=="],
 
     "remark-toc": ["remark-toc@8.0.1", "", { "dependencies": { "@types/mdast": "^3.0.0", "mdast-util-toc": "^6.0.0", "unified": "^10.0.0" } }, "sha512-7he2VOm/cy13zilnOTZcyAoyoolV26ULlon6XyCFU+vG54Z/LWJnwphj/xKIDLOt66QmJUgTyUvLVHi2aAElyg=="],
+
+    "remixicon": ["remixicon@4.9.1", "", {}, "sha512-36gLSoujkabnCFZFDyP17VNh9piuBA/rsXUb4auSJWLGsHVXtmxLj/EM5FjaEAGnk8oIAj1Azob/DZ2N+90lAQ=="],
 
     "require-directory": ["require-directory@2.1.1", "", {}, "sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q=="],
 

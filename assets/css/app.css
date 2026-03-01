@@ -6,9 +6,9 @@
 @source "../js";
 @source "../../lib/ditto_web";
 
-/* A Tailwind plugin that makes "hero-#{ICON}" classes available.
-   Heroicons is installed via package.json (bun install). */
-@plugin "../vendor/heroicons";
+/* A Tailwind plugin that makes "ri-#{ICON}" classes available.
+   Remixicon is installed via package.json (bun install). */
+@plugin "../vendor/remixicon";
 
 /* daisyUI Tailwind Plugin — installed via package.json (bun install). */
 @plugin "daisyui" {

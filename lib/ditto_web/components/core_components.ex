@@ -64,15 +64,15 @@ defmodule DittoWeb.CoreComponents do
         @kind == :info && "alert-info",
         @kind == :error && "alert-error"
       ]}>
-        <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
-        <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
+        <.icon :if={@kind == :info} name="ri-information-line" class="size-5 shrink-0" />
+        <.icon :if={@kind == :error} name="ri-error-warning-line" class="size-5 shrink-0" />
         <div>
           <p :if={@title} class="font-semibold">{@title}</p>
           <p>{msg}</p>
         </div>
         <div class="flex-1" />
         <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
-          <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
+          <.icon name="ri-close-line" class="size-5 opacity-40 group-hover:opacity-70" />
         </button>
       </div>
     </div>
@@ -299,7 +299,7 @@ defmodule DittoWeb.CoreComponents do
   defp error(assigns) do
     ~H"""
     <p class="mt-1.5 flex gap-2 items-center text-sm text-error">
-      <.icon name="hero-exclamation-circle" class="size-5" />
+      <.icon name="ri-error-warning-line" class="size-5" />
       {render_slot(@inner_block)}
     </p>
     """
@@ -428,18 +428,18 @@ defmodule DittoWeb.CoreComponents do
   You can customize the size and colors of the icons by setting
   width, height, and background color classes.
 
-  Icons are extracted from the `deps/heroicons` directory and bundled within
-  your compiled app.css by the plugin in `assets/vendor/heroicons.js`.
+  Icons are sourced from the `remixicon` npm package and bundled within
+  your compiled app.css by the plugin in `assets/vendor/remixicon.js`.
 
   ## Examples
 
-      <.icon name="hero-x-mark" />
-      <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
+      <.icon name="ri-close-line" />
+      <.icon name="ri-refresh-line" class="ml-1 size-3 motion-safe:animate-spin" />
   """
   attr :name, :string, required: true
   attr :class, :any, default: "size-4"
 
-  def icon(%{name: "hero-" <> _} = assigns) do
+  def icon(%{name: "ri-" <> _} = assigns) do
     ~H"""
     <span class={[@name, @class]} />
     """
