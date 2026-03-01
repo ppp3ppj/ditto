@@ -23,8 +23,7 @@ config :ditto, DittoWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "lD9usyK9MDzgmJZlUmRJzofteqvxniugf/UHOpQQIXrY9ZnPEQ828gGXYhlhWW+i",
   watchers: [
-    bun_css: {Bun, :install_and_run, [:watch_css, []]},
-    bun_js:  {Bun, :install_and_run, [:watch_js,  []]}
+    bun: {Bun, :install_and_run, [:assets, ~w(run watch)]}
   ]
 
 # ## SSL Support

@@ -34,12 +34,8 @@ config :ditto, Ditto.Mailer, adapter: Swoosh.Adapters.Local
 # Configure bun (the version is required)
 config :bun,
   version: "1.3.9",
-  watch_css: [
-    args: ~w(run watch:css),
-    cd: Path.expand("../assets", __DIR__)
-  ],
-  watch_js: [
-    args: ~w(run watch:js),
+  assets: [
+    args: ~w(),
     cd: Path.expand("../assets", __DIR__)
   ]
 

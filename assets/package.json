@@ -3,23 +3,18 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i ./css/app.css -o ../priv/static/assets/css/app.css",
-    "watch:css": "tailwindcss -i ./css/app.css -o ../priv/static/assets/css/app.css --watch",
-    "deploy:css": "tailwindcss -i ./css/app.css -o ../priv/static/assets/css/app.css --minify",
-    "build:js": "NODE_PATH=../_build/dev:../deps   bun build ./js/app.js --outdir ../priv/static/assets/js --sourcemap=inline --target browser",
-    "watch:js": "NODE_PATH=../_build/dev:../deps   bun build ./js/app.js --outdir ../priv/static/assets/js --sourcemap=inline --target browser --watch",
-    "deploy:js": "NODE_PATH=../_build/prod:../deps  bun build ./js/app.js --outdir ../priv/static/assets/js --target browser --minify"
+    "build": "bun ./node_modules/vite/bin/vite.js build --mode development",
+    "watch": "WATCH_STDIN=1 bun ./node_modules/vite/bin/vite.js build --mode development --watch",
+    "deploy": "bun ./node_modules/vite/bin/vite.js build"
   },
   "dependencies": {
     "daisyui": "^5.5.19",
-    "phoenix": "file:../deps/phoenix",
-    "phoenix_html": "file:../deps/phoenix_html",
-    "phoenix_live_view": "file:../deps/phoenix_live_view",
     "remixicon": "^4.9.1",
     "tailwindcss": "^4.2.1",
     "topbar": "^3.0.1"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.2.1"
+    "@tailwindcss/vite": "^4.2.1",
+    "vite": "^7.3.1"
   }
 }

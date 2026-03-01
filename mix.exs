@@ -73,15 +73,13 @@ defmodule Ditto.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["cmd --cd assets bun install"],
+      "assets.setup": ["bun.install --if-missing", "bun assets install"],
       "assets.build": [
         "compile",
-        "cmd --cd assets bun run build:css",
-        "cmd --cd assets bun run build:js"
+        "bun assets run build"
       ],
       "assets.deploy": [
-        "cmd --cd assets bun run deploy:css",
-        "cmd --cd assets bun run deploy:js",
+        "bun assets run deploy",
         "phx.digest"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
