@@ -11,6 +11,7 @@
     "deploy:js": "NODE_PATH=../_build/prod:../deps  bun build ./js/app.js --outdir ../priv/static/assets/js --target browser --minify"
   },
   "dependencies": {
+    "daisyui": "^5.5.19",
     "heroicons": "^2.2.0",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
