@@ -15,6 +15,19 @@ defmodule Ditto.Accounts.User do
   end
 
   @doc """
+  A user changeset for registration with email and password.
+
+  Sets `confirmed_at` automatically so no email confirmation step is needed.
+  """
+  def registration_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:email, :password])
+    |> validate_email(opts)
+    |> validate_password(opts)
+    |> put_change(:confirmed_at, DateTime.utc_now(:second))
+  end
+
+  @doc """
   A user changeset for registering or changing the email.
 
   It requires the email to change otherwise an error is added.
