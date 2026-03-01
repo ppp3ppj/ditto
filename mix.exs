@@ -49,15 +49,7 @@ defmodule Ditto.MixProject do
       {:phoenix_live_view, "~> 1.1.0"},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
-      {:heroicons,
-       github: "tailwindlabs/heroicons",
-       tag: "v2.2.0",
-       sparse: "optimized",
-       app: false,
-       compile: false,
-       depth: 1},
+      {:bun, "~> 2.0", runtime: Mix.env() == :dev},
       {:swoosh, "~> 1.16"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
@@ -81,12 +73,20 @@ defmodule Ditto.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["compile", "tailwind ditto", "esbuild ditto"],
+      "assets.setup": ["bun.install --if-missing", "bun assets install"],
+      "assets.build": [
+        "compile",
+        "bun assets run build"
+      ],
       "assets.deploy": [
-        "tailwind ditto --minify",
-        "esbuild ditto --minify",
+        "bun assets run deploy",
         "phx.digest"
+      ],
+      "prod.build": [
+        "deps.get --only prod",
+        "compile",
+        "assets.deploy",
+        "release"
       ],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]

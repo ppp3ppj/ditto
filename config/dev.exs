@@ -16,14 +16,14 @@ config :ditto, Ditto.Repo,
 config :ditto, DittoWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}],
+  # http: [ip: {127, 0, 0, 1}],
+  http: [ip: {0, 0, 0, 0}],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "lD9usyK9MDzgmJZlUmRJzofteqvxniugf/UHOpQQIXrY9ZnPEQ828gGXYhlhWW+i",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:ditto, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:ditto, ~w(--watch)]}
+    bun: {Bun, :install_and_run, [:assets, ~w(run watch)]}
   ]
 
 # ## SSL Support

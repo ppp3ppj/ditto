@@ -1,0 +1,24 @@
+{
+  "name": "ditto",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "bun ./node_modules/vite/bin/vite.js build --mode development",
+    "watch": "WATCH_STDIN=1 bun ./node_modules/vite/bin/vite.js build --mode development --watch",
+    "deploy": "bun ./node_modules/vite/bin/vite.js build",
+    "format": "prettier --write '{js,css}/**/*.{js,json,css}' '*.js' --no-error-on-unmatched-pattern --log-level warn",
+    "format-check": "prettier --check '{js,css}/**/*.{js,json,css}' '*.js' --no-error-on-unmatched-pattern --log-level warn"
+  },
+  "dependencies": {
+    "daisyui": "^5.5.19",
+    "remixicon": "^4.9.1",
+    "tailwindcss": "^4.2.1",
+    "topbar": "^3.0.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "autoprefixer": "^10.2.0",
+    "prettier": "^3.0.3",
+    "vite": "^7.3.1"
+  }
+}
