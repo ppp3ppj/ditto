@@ -17,6 +17,14 @@ defmodule DittoWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :require_org_access do
+    plug :verify_organization_access
+  end
+
+  pipeline :require_sysadmin_access do
+    plug :ensure_sysadmin
+  end
+
   scope "/", DittoWeb do
     pipe_through :browser
 
@@ -70,5 +78,36 @@ defmodule DittoWeb.Router do
 
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  ## Organization-scoped routes
+
+  scope "/orgs/:org", DittoWeb do
+    pipe_through [:browser, :require_authenticated_user, :require_org_access]
+
+    live_session :org_authenticated,
+      on_mount: [
+        {DittoWeb.UserAuth, :require_authenticated},
+        {DittoWeb.UserAuth, :verify_organization_access}
+      ] do
+      live "/dashboard", OrgLive.Dashboard, :index
+      live "/members", OrgLive.Members, :index
+      live "/settings", OrgLive.Settings, :edit
+    end
+  end
+
+  ## Sysadmin routes
+
+  scope "/sysadmin", DittoWeb do
+    pipe_through [:browser, :require_authenticated_user, :require_sysadmin_access]
+
+    live_session :sysadmin,
+      on_mount: [
+        {DittoWeb.UserAuth, :require_authenticated},
+        {DittoWeb.UserAuth, :require_sysadmin}
+      ] do
+      live "/", SysadminLive.Dashboard, :index
+      live "/organizations", SysadminLive.Organizations, :index
+    end
   end
 end

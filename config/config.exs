@@ -18,6 +18,15 @@ config :ditto, :scopes,
     schema_table: :users,
     test_data_fixture: Ditto.AccountsFixtures,
     test_setup_helper: :register_and_log_in_user
+  ],
+  organization: [
+    module: Ditto.Accounts.Scope,
+    assign_key: :current_scope,
+    access_path: [:organization, :id],
+    route_prefix: "/orgs/:org",
+    schema_key: :organization_id,
+    schema_type: :binary_id,
+    schema_table: :organizations
   ]
 
 config :ditto,

@@ -230,6 +230,45 @@ defmodule DittoWeb.UserAuth do
     end
   end
 
+  def on_mount(:verify_organization_access, %{"org" => slug}, _session, socket) do
+    current_user = socket.assigns.current_scope && socket.assigns.current_scope.user
+
+    case Accounts.get_organization_by_slug(slug) do
+      %Accounts.Organization{id: org_id} when not is_nil(current_user) and org_id == current_user.organization_id ->
+        {:cont, socket}
+
+      %Accounts.Organization{} ->
+        {:halt,
+         socket
+         |> Phoenix.LiveView.put_flash(:error, "You don't have access to that organization.")
+         |> Phoenix.LiveView.redirect(to: ~p"/")}
+
+      nil ->
+        {:halt,
+         socket
+         |> Phoenix.LiveView.put_flash(:error, "Organization not found.")
+         |> Phoenix.LiveView.redirect(to: ~p"/")}
+    end
+  end
+
+  def on_mount(:verify_organization_access, _params, _session, socket) do
+    {:cont, socket}
+  end
+
+  def on_mount(:require_sysadmin, _params, session, socket) do
+    socket = mount_current_scope(socket, session)
+    user = socket.assigns.current_scope && socket.assigns.current_scope.user
+
+    if user && user.is_sysadmin do
+      {:cont, socket}
+    else
+      {:halt,
+       socket
+       |> Phoenix.LiveView.put_flash(:error, "You must be a system administrator to access this page.")
+       |> Phoenix.LiveView.redirect(to: ~p"/")}
+    end
+  end
+
   def on_mount(:require_sudo_mode, _params, session, socket) do
     socket = mount_current_scope(socket, session)
 
@@ -257,12 +296,66 @@ defmodule DittoWeb.UserAuth do
   end
 
   @doc "Returns the path to redirect to after log in."
-  # the user was already logged in, redirect to settings
-  def signed_in_path(%Plug.Conn{assigns: %{current_scope: %Scope{user: %Accounts.User{}}}}) do
-    ~p"/users/settings"
+  def signed_in_path(%Plug.Conn{assigns: %{current_scope: %Scope{user: user, organization: org}}})
+      when not is_nil(user) and not is_nil(org) do
+    ~p"/orgs/#{org.slug}/dashboard"
+  end
+
+  def signed_in_path(%Plug.Conn{assigns: %{current_scope: %Scope{user: user}}})
+      when not is_nil(user) do
+    ~p"/organizations/new"
   end
 
   def signed_in_path(_), do: ~p"/"
+
+  @doc """
+  Plug that verifies the current user belongs to the organization in the URL.
+  Uses the `:org` path parameter (the organization slug).
+  """
+  def verify_organization_access(conn, _opts) do
+    slug = conn.params["org"]
+
+    if slug do
+      current_scope = conn.assigns[:current_scope]
+      current_user = current_scope && current_scope.user
+
+      case Accounts.get_organization_by_slug(slug) do
+        %Accounts.Organization{id: org_id} when not is_nil(current_user) and org_id == current_user.organization_id ->
+          conn
+
+        %Accounts.Organization{} ->
+          conn
+          |> put_flash(:error, "You don't have access to that organization.")
+          |> redirect(to: ~p"/")
+          |> halt()
+
+        nil ->
+          conn
+          |> put_flash(:error, "Organization not found.")
+          |> redirect(to: ~p"/")
+          |> halt()
+      end
+    else
+      conn
+    end
+  end
+
+  @doc """
+  Plug that restricts access to system administrators only.
+  """
+  def ensure_sysadmin(conn, _opts) do
+    current_scope = conn.assigns[:current_scope]
+    user = current_scope && current_scope.user
+
+    if user && user.is_sysadmin do
+      conn
+    else
+      conn
+      |> put_flash(:error, "You must be a system administrator to access this page.")
+      |> redirect(to: ~p"/")
+      |> halt()
+    end
+  end
 
   @doc """
   Plug for routes that require the user to be authenticated.

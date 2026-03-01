@@ -11,22 +11,24 @@ defmodule Ditto.Accounts.Scope do
   It is useful for logging as well as for scoping pubsub subscriptions and
   broadcasts when a caller subscribes to an interface or performs a particular
   action.
-
-  Feel free to extend the fields on this struct to fit the needs of
-  growing application requirements.
   """
 
-  alias Ditto.Accounts.User
+  alias Ditto.Accounts.{User, Organization}
 
-  defstruct user: nil
+  defstruct user: nil, organization: nil
 
   @doc """
-  Creates a scope for the given user.
+  Creates a scope for the given user, automatically loading their organization.
 
   Returns nil if no user is given.
   """
   def for_user(%User{} = user) do
-    %__MODULE__{user: user}
+    org =
+      if user.organization_id do
+        Ditto.Repo.get(Organization, user.organization_id)
+      end
+
+    %__MODULE__{user: user, organization: org}
   end
 
   def for_user(nil), do: nil

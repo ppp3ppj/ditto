@@ -4,6 +4,9 @@ defmodule Ditto.Accounts.User do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+
+  @roles ~w(admin manager member)
+
   schema "users" do
     field :email, :string
     field :username, :string
@@ -12,9 +15,26 @@ defmodule Ditto.Accounts.User do
     field :hashed_password, :string, redact: true
     field :confirmed_at, :utc_datetime
     field :authenticated_at, :utc_datetime, virtual: true
+    field :role, :string, default: "member"
+    field :is_sysadmin, :boolean, default: false
+    field :org_name, :string, virtual: true
+    field :org_slug, :string, virtual: true
+
+    belongs_to :organization, Ditto.Accounts.Organization
 
     timestamps(type: :utc_datetime)
   end
+
+  @doc """
+  Returns true if the user is a system administrator.
+  """
+  def is_sysadmin?(%__MODULE__{is_sysadmin: true}), do: true
+  def is_sysadmin?(_), do: false
+
+  @doc """
+  Guard macro for checking sysadmin status in function guards.
+  """
+  defguard is_sysadmin(user) when user.is_sysadmin == true
 
   @doc """
   A user changeset for registration with email and password.
@@ -23,7 +43,7 @@ defmodule Ditto.Accounts.User do
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :username, :name, :password])
+    |> cast(attrs, [:email, :username, :name, :password, :organization_id, :role, :org_name, :org_slug])
     |> validate_email(opts)
     |> validate_username(opts)
     |> validate_password(opts)
@@ -54,6 +74,57 @@ defmodule Ditto.Accounts.User do
     user
     |> cast(attrs, [:email])
     |> validate_email(opts)
+  end
+
+  @doc """
+  A user changeset for changing the user's role within their organization.
+  """
+  def role_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:role])
+    |> validate_required([:role])
+    |> validate_inclusion(:role, @roles, message: "must be one of: #{Enum.join(@roles, ", ")}")
+  end
+
+  @doc """
+  A user changeset for updating sysadmin status.
+  """
+  def sysadmin_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:is_sysadmin])
+    |> validate_required([:is_sysadmin])
+  end
+
+  @doc """
+  A user changeset for assigning or changing organization membership.
+  """
+  def organization_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:organization_id, :role])
+    |> validate_required([:organization_id])
+    |> validate_inclusion(:role, @roles, message: "must be one of: #{Enum.join(@roles, ", ")}")
+  end
+
+  @doc """
+  A user changeset for changing the password.
+
+  It is important to validate the length of the password, as long passwords may
+  be very expensive to hash for certain algorithms.
+
+  ## Options
+
+    * `:hash_password` - Hashes the password so it can be stored securely
+      in the database and ensures the password field is cleared to prevent
+      leaks in the logs. If password hashing is not needed and clearing the
+      password field is not desired (like when using this changeset for
+      validations on a LiveView form), this option can be set to `false`.
+      Defaults to `true`.
+  """
+  def password_changeset(user, attrs, opts \\ []) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_confirmation(:password, message: "does not match password")
+    |> validate_password(opts)
   end
 
   defp validate_email(changeset, opts) do
@@ -100,28 +171,6 @@ defmodule Ditto.Accounts.User do
     else
       changeset
     end
-  end
-
-  @doc """
-  A user changeset for changing the password.
-
-  It is important to validate the length of the password, as long passwords may
-  be very expensive to hash for certain algorithms.
-
-  ## Options
-
-    * `:hash_password` - Hashes the password so it can be stored securely
-      in the database and ensures the password field is cleared to prevent
-      leaks in the logs. If password hashing is not needed and clearing the
-      password field is not desired (like when using this changeset for
-      validations on a LiveView form), this option can be set to `false`.
-      Defaults to `true`.
-  """
-  def password_changeset(user, attrs, opts \\ []) do
-    user
-    |> cast(attrs, [:password])
-    |> validate_confirmation(:password, message: "does not match password")
-    |> validate_password(opts)
   end
 
   defp validate_password(changeset, opts) do
