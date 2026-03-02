@@ -46,6 +46,7 @@ defmodule Ditto.Accounts.User do
     |> cast(attrs, [:email, :username, :name, :password, :organization_id, :role, :org_name, :org_slug])
     |> validate_email(opts)
     |> validate_username(opts)
+    |> validate_confirmation(:password, message: "does not match password")
     |> validate_password(opts)
     |> put_change(:confirmed_at, DateTime.utc_now(:second))
   end

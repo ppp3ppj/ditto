@@ -62,6 +62,7 @@ defmodule DittoWeb.Router do
       on_mount: [{DittoWeb.UserAuth, :require_authenticated}] do
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
+      live "/welcome", WelcomeLive, :index
     end
 
     post "/users/update-password", UserSessionController, :update_password
@@ -76,6 +77,7 @@ defmodule DittoWeb.Router do
       live "/users/log-in", UserLive.Login, :new
     end
 
+    post "/users/register", UserRegistrationController, :create
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
   end

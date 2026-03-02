@@ -11,6 +11,7 @@ defmodule Ditto.Accounts.Organization do
     field :name, :string
     field :slug, :string
     field :active, :boolean, default: true
+    field :join_code, :string
 
     has_many :users, Ditto.Accounts.User
 
@@ -28,5 +29,12 @@ defmodule Ditto.Accounts.Organization do
     )
     |> update_change(:slug, &String.downcase/1)
     |> unique_constraint(:slug)
+  end
+
+  @doc """
+  Generates a random 8-character uppercase hex join code.
+  """
+  def generate_join_code do
+    :crypto.strong_rand_bytes(4) |> Base.encode16(case: :upper)
   end
 end

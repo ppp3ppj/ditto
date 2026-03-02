@@ -11,13 +11,120 @@ defmodule Ditto.Accounts do
   ## Organizations
 
   @doc """
-  Creates an organization.
+  Creates an organization, auto-generating a unique join code.
   """
   def create_organization(attrs) do
+    join_code = unique_join_code()
+
     %Organization{}
     |> Organization.changeset(attrs)
+    |> Ecto.Changeset.put_change(:join_code, join_code)
     |> Repo.insert()
   end
+
+  @doc """
+  Generates a join code that doesn't already exist in the DB.
+  """
+  defp unique_join_code do
+    code = Organization.generate_join_code()
+
+    if Repo.get_by(Organization, join_code: code) do
+      unique_join_code()
+    else
+      code
+    end
+  end
+
+  @doc """
+  Regenerates the join code for an organization. Requires admin role or sysadmin.
+  """
+  def regenerate_org_join_code(%Scope{user: user}, %Organization{} = org) do
+    with :ok <- Bodyguard.permit(Ditto.Accounts.Policy, :update_organization, user, org) do
+      org
+      |> Ecto.Changeset.change(%{join_code: unique_join_code()})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Gets an organization by its join code. Returns nil if not found.
+  """
+  def get_organization_by_join_code(code) when is_binary(code) do
+    Repo.get_by(Organization, join_code: String.upcase(code))
+  end
+
+  def get_organization_by_join_code(_), do: nil
+
+  @doc """
+  Adds a user to an organization using a join code.
+  The user must not already belong to an org.
+  """
+  def join_org_by_code(%User{} = user, code) do
+    case get_organization_by_join_code(code) do
+      nil ->
+        {:error, :invalid_code}
+
+      %Organization{} = org ->
+        user
+        |> User.organization_changeset(%{organization_id: org.id, role: "member"})
+        |> Repo.update()
+        |> case do
+          {:ok, updated_user} -> {:ok, updated_user, org}
+          error -> error
+        end
+    end
+  end
+
+  @doc """
+  Admin direct-adds a user to the org by username or email.
+  The target user must not already belong to an org.
+  Requires admin role or sysadmin.
+  """
+  def add_member_to_org(%Scope{user: actor, organization: org}, identifier)
+      when is_binary(identifier) do
+    with :ok <- Bodyguard.permit(Ditto.Accounts.Policy, :invite_user, actor, org) do
+      user =
+        if String.contains?(identifier, "@") do
+          Repo.get_by(User, email: identifier)
+        else
+          Repo.get_by(User, username: String.downcase(identifier))
+        end
+
+      cond do
+        is_nil(user) ->
+          {:error, :user_not_found}
+
+        not is_nil(user.organization_id) ->
+          {:error, :already_in_org}
+
+        true ->
+          user
+          |> User.organization_changeset(%{organization_id: org.id, role: "member"})
+          |> Repo.update()
+      end
+    end
+  end
+
+  @doc """
+  Searches for users not yet in any organization.
+  Matches against username, email, or name.
+  Excludes sysadmins.
+  """
+  def search_users_without_org(query) when is_binary(query) and byte_size(query) >= 2 do
+    q = "%#{query}%"
+
+    Repo.all(
+      from u in User,
+        where: is_nil(u.organization_id) and not u.is_sysadmin,
+        where:
+          like(u.email, ^q) or like(u.username, ^q) or
+            (not is_nil(u.name) and like(u.name, ^q)),
+        order_by: [asc: u.username],
+        limit: 10
+    )
+  end
+
+  def search_users_without_org(_), do: []
 
   @doc """
   Gets a single organization by id.

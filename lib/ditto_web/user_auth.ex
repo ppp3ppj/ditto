@@ -312,7 +312,7 @@ defmodule DittoWeb.UserAuth do
 
   def signed_in_path(%Plug.Conn{assigns: %{current_scope: %Scope{user: user}}})
       when not is_nil(user) do
-    ~p"/organizations/new"
+    ~p"/welcome"
   end
 
   def signed_in_path(_), do: ~p"/"
