@@ -2,7 +2,6 @@ defmodule DittoWeb.UserSessionControllerTest do
   use DittoWeb.ConnCase
 
   import Ditto.AccountsFixtures
-  alias Ditto.Accounts
 
   setup do
     %{user: user_fixture()}
