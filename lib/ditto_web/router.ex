@@ -59,6 +59,14 @@ defmodule DittoWeb.Router do
       live "/projects/new", ProjectLive.New, :new
       live "/projects/join/:token", ProjectLive.Join, :join
       live "/projects/:id", ProjectLive.Show, :show
+
+      live "/projects/:pid/suites", TestLive.SuiteIndex, :index
+      live "/projects/:pid/suites/:id", TestLive.SuiteShow, :show
+      live "/projects/:pid/suites/:sid/scenarios/:id", TestLive.ScenarioShow, :show
+      live "/projects/:pid/suites/:sid/scenarios/:scid/cases/:id", TestLive.CaseShow, :show
+      live "/projects/:pid/runs", TestLive.RunIndex, :index
+      live "/projects/:pid/runs/new", TestLive.RunNew, :new
+      live "/projects/:pid/runs/:id", TestLive.RunShow, :show
     end
 
     post "/users/update-password", UserSessionController, :update_password
