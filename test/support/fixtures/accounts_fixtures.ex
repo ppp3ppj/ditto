@@ -10,11 +10,15 @@ defmodule Ditto.AccountsFixtures do
   alias Ditto.Accounts.Scope
 
   def unique_user_email, do: "user#{System.unique_integer()}@example.com"
+  def unique_username, do: "user#{System.unique_integer([:positive])}"
   def valid_user_password, do: "hello world!"
 
   def valid_user_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
-      email: unique_user_email()
+      email: unique_user_email(),
+      username: unique_username(),
+      password: valid_user_password(),
+      password_confirmation: valid_user_password()
     })
   end
 
@@ -28,17 +32,7 @@ defmodule Ditto.AccountsFixtures do
   end
 
   def user_fixture(attrs \\ %{}) do
-    user = unconfirmed_user_fixture(attrs)
-
-    token =
-      extract_user_token(fn url ->
-        Accounts.deliver_login_instructions(user, url)
-      end)
-
-    {:ok, {user, _expired_tokens}} =
-      Accounts.login_user_by_magic_link(token)
-
-    user
+    unconfirmed_user_fixture(attrs)
   end
 
   def user_scope_fixture do
@@ -70,12 +64,6 @@ defmodule Ditto.AccountsFixtures do
       ),
       set: [authenticated_at: authenticated_at]
     )
-  end
-
-  def generate_user_magic_link_token(user) do
-    {encoded_token, user_token} = Accounts.UserToken.build_email_token(user, "login")
-    Ditto.Repo.insert!(user_token)
-    {encoded_token, user_token.token}
   end
 
   def offset_user_token(token, amount_to_add, unit) do
