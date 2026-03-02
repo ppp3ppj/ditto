@@ -41,6 +41,16 @@ defmodule DittoWeb.ProjectLive.Show do
           </div>
         </div>
 
+        <%!-- Testing nav --%>
+        <section class="flex gap-3">
+          <.link navigate={~p"/projects/#{@project.id}/suites"} class="btn btn-sm btn-outline">
+            Test Suites
+          </.link>
+          <.link navigate={~p"/projects/#{@project.id}/runs"} class="btn btn-sm btn-outline">
+            Test Runs
+          </.link>
+        </section>
+
         <%!-- Members --%>
         <section>
           <h2 class="text-lg font-semibold">Members (<%= length(@members) %>)</h2>
