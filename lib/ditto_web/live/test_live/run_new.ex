@@ -22,18 +22,19 @@ defmodule DittoWeb.TestLive.RunNew do
 
         <h1 class="text-2xl font-bold">New Test Run</h1>
 
-        <form id="run_form" phx-submit="create_run" class="space-y-6">
-          <%!-- Run name --%>
+        <div class="space-y-6">
+          <%!-- Run name (standalone input, not inside the form to avoid mixing phx-change events) --%>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Run name <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              Run name <span class="text-red-500">*</span>
+            </label>
             <input
               type="text"
-              name="run[name]"
+              id="run_name_input"
               value={@run_name}
-              phx-change="update_name"
+              phx-keyup="update_name"
               placeholder="e.g. Sprint 12 regression"
               class="input input-bordered w-full"
-              required
             />
           </div>
 
@@ -44,42 +45,48 @@ defmodule DittoWeb.TestLive.RunNew do
             </label>
 
             <div :if={@suite_tree == []} class="rounded-lg border border-dashed border-gray-300 p-6 text-center text-gray-500 text-sm">
-              No test suites found. <.link navigate={~p"/projects/#{@project.id}/suites"} class="underline">Create some first</.link>.
+              No test suites found.
+              <.link navigate={~p"/projects/#{@project.id}/suites"} class="underline">Create some first</.link>.
             </div>
 
             <div :if={@suite_tree != []} class="rounded-lg border border-gray-200 divide-y divide-gray-100">
               <div :for={entry <- @suite_tree} class="p-3">
-                <%!-- Suite checkbox --%>
-                <label class="flex items-center gap-2 font-medium cursor-pointer">
+                <%!-- Suite row: click anywhere on it to toggle --%>
+                <button
+                  type="button"
+                  phx-click="toggle_suite"
+                  phx-value-suite-id={entry.suite.id}
+                  class="flex items-center gap-2 font-medium w-full text-left"
+                >
                   <input
                     type="checkbox"
-                    name={"suite_ids[]"}
-                    value={entry.suite.id}
                     checked={entry.suite.id in @selected_suite_ids}
-                    phx-change="toggle_suite"
-                    phx-value-suite-id={entry.suite.id}
-                    class="checkbox checkbox-sm"
+                    class="checkbox checkbox-sm pointer-events-none"
+                    readonly
                   />
                   <span><%= entry.suite.name %></span>
                   <span class="text-xs text-gray-400 font-normal">
                     (<%= length(entry.scenarios) %> scenario<%= if length(entry.scenarios) != 1, do: "s" %>)
                   </span>
-                </label>
+                </button>
 
-                <%!-- Scenario checkboxes (only shown when suite is not fully selected) --%>
+                <%!-- Scenario checkboxes (shown when suite is not fully selected) --%>
                 <div :if={entry.suite.id not in @selected_suite_ids && entry.scenarios != []} class="mt-2 ml-6 space-y-1">
-                  <label :for={sc <- entry.scenarios} class="flex items-center gap-2 text-sm cursor-pointer">
+                  <button
+                    :for={sc <- entry.scenarios}
+                    type="button"
+                    phx-click="toggle_scenario"
+                    phx-value-scenario-id={sc.id}
+                    class="flex items-center gap-2 text-sm w-full text-left"
+                  >
                     <input
                       type="checkbox"
-                      name={"scenario_ids[]"}
-                      value={sc.id}
                       checked={sc.id in @selected_scenario_ids}
-                      phx-change="toggle_scenario"
-                      phx-value-scenario-id={sc.id}
-                      class="checkbox checkbox-xs"
+                      class="checkbox checkbox-xs pointer-events-none"
+                      readonly
                     />
                     <span><%= sc.name %></span>
-                  </label>
+                  </button>
                 </div>
               </div>
             </div>
@@ -94,7 +101,7 @@ defmodule DittoWeb.TestLive.RunNew do
 
           <div class="flex gap-3">
             <.button
-              type="submit"
+              phx-click="create_run"
               phx-disable-with="Creating..."
               class="btn btn-primary"
               disabled={@selected_case_count == 0 || @run_name == ""}
@@ -105,7 +112,7 @@ defmodule DittoWeb.TestLive.RunNew do
               Cancel
             </.link>
           </div>
-        </form>
+        </div>
       </div>
     </Layouts.app>
     """
@@ -130,18 +137,16 @@ defmodule DittoWeb.TestLive.RunNew do
   end
 
   @impl true
-  def handle_event("update_name", %{"run" => %{"name" => name}}, socket) do
+  def handle_event("update_name", %{"value" => name}, socket) do
     {:noreply, assign(socket, run_name: name)}
   end
 
-  def handle_event("toggle_suite", %{"suite-id" => suite_id} = params, socket) do
-    checked = Map.get(params, "value") == suite_id
-
+  def handle_event("toggle_suite", %{"suite-id" => suite_id}, socket) do
     selected_suite_ids =
-      if checked do
-        [suite_id | socket.assigns.selected_suite_ids] |> Enum.uniq()
-      else
+      if suite_id in socket.assigns.selected_suite_ids do
         Enum.reject(socket.assigns.selected_suite_ids, &(&1 == suite_id))
+      else
+        [suite_id | socket.assigns.selected_suite_ids]
       end
 
     {:noreply,
@@ -150,14 +155,12 @@ defmodule DittoWeb.TestLive.RunNew do
      |> assign_case_count()}
   end
 
-  def handle_event("toggle_scenario", %{"scenario-id" => scenario_id} = params, socket) do
-    checked = Map.get(params, "value") == scenario_id
-
+  def handle_event("toggle_scenario", %{"scenario-id" => scenario_id}, socket) do
     selected_scenario_ids =
-      if checked do
-        [scenario_id | socket.assigns.selected_scenario_ids] |> Enum.uniq()
-      else
+      if scenario_id in socket.assigns.selected_scenario_ids do
         Enum.reject(socket.assigns.selected_scenario_ids, &(&1 == scenario_id))
+      else
+        [scenario_id | socket.assigns.selected_scenario_ids]
       end
 
     {:noreply,
@@ -191,7 +194,11 @@ defmodule DittoWeb.TestLive.RunNew do
     assign(socket, selected_case_count: count)
   end
 
-  defp count_selected_cases(%{suite_tree: suite_tree, selected_suite_ids: suite_ids, selected_scenario_ids: scenario_ids}) do
+  defp count_selected_cases(%{
+         suite_tree: suite_tree,
+         selected_suite_ids: suite_ids,
+         selected_scenario_ids: scenario_ids
+       }) do
     suite_cases =
       suite_tree
       |> Enum.filter(fn entry -> entry.suite.id in suite_ids end)
@@ -199,15 +206,17 @@ defmodule DittoWeb.TestLive.RunNew do
       |> Enum.map(fn sc -> length(Testing.list_cases(sc)) end)
       |> Enum.sum()
 
-    # Scenarios that are individually selected (not via suite)
+    # Scenarios individually selected (not already covered by a selected suite)
+    suite_scenario_ids =
+      suite_tree
+      |> Enum.filter(fn entry -> entry.suite.id in suite_ids end)
+      |> Enum.flat_map(fn entry -> Enum.map(entry.scenarios, & &1.id) end)
+
     scenario_cases =
       suite_tree
       |> Enum.flat_map(fn entry -> entry.scenarios end)
       |> Enum.filter(fn sc ->
-        sc.id in scenario_ids &&
-          not Enum.any?(suite_tree, fn entry ->
-            entry.suite.id in suite_ids && Enum.any?(entry.scenarios, &(&1.id == sc.id))
-          end)
+        sc.id in scenario_ids && sc.id not in suite_scenario_ids
       end)
       |> Enum.map(fn sc -> length(Testing.list_cases(sc)) end)
       |> Enum.sum()
