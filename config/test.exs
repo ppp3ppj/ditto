@@ -11,7 +11,8 @@ config :argon2_elixir, t_cost: 1, m_cost: 8
 config :ditto, Ditto.Repo,
   database: Path.expand("../ditto_test.db", __DIR__),
   pool_size: 5,
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool: Ecto.Adapters.SQL.Sandbox,
+  busy_timeout: 5000
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
