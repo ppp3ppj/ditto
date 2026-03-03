@@ -10,200 +10,252 @@ defmodule DittoWeb.TestLive.RunShow do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} current_scope={@current_scope}>
-      <div class="mx-auto max-w-4xl space-y-6">
-        <%!-- Breadcrumb --%>
-        <nav class="text-sm text-gray-500 flex gap-1 items-center">
-          <.link navigate={~p"/projects"} class="hover:underline">Projects</.link>
-          <span>/</span>
-          <.link navigate={~p"/projects/#{@project.id}"} class="hover:underline"><%= @project.name %></.link>
-          <span>/</span>
-          <.link navigate={~p"/projects/#{@project.id}/runs"} class="hover:underline">Test Runs</.link>
-          <span>/</span>
-          <span class="text-gray-800 font-medium"><%= @run.name %></span>
-        </nav>
+      <%!-- Empty run --%>
+      <div :if={@results == []} class="mx-auto max-w-2xl py-16 text-center text-gray-500">
+        <p class="text-lg">This run has no test cases.</p>
+        <.link navigate={~p"/projects/#{@project.id}/runs"} class="mt-4 btn btn-sm btn-outline">
+          ← Back to Runs
+        </.link>
+      </div>
 
-        <%!-- Run header --%>
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold"><%= @run.name %></h1>
-            <span class={[
-              "mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium",
-              @run.status == "pending" && "bg-gray-100 text-gray-600",
-              @run.status == "in_progress" && "bg-blue-100 text-blue-700",
-              @run.status == "completed" && "bg-green-100 text-green-700"
-            ]}>
-              <%= @run.status %>
+      <%!-- Active runner --%>
+      <div :if={@results != [] && @current_index < length(@results)} class="mx-auto max-w-3xl space-y-4">
+        <%!-- Top bar: back link + run name + dot navigation --%>
+        <div class="flex items-center gap-3 flex-wrap">
+          <.link navigate={~p"/projects/#{@project.id}/runs"} class="text-sm text-gray-500 hover:underline shrink-0">
+            ← Runs
+          </.link>
+          <span class="text-sm font-medium text-gray-700 shrink-0"><%= @run.name %></span>
+          <div class="ml-auto flex items-center gap-1 flex-wrap">
+            <%!-- Dot nav (show if ≤ 20 cases, else show counter only) --%>
+            <div :if={length(@results) <= 20} class="flex items-center gap-1">
+              <button
+                :for={{result, idx} <- Enum.with_index(@results)}
+                phx-click="jump_to"
+                phx-value-index={idx}
+                title={result.case_name}
+                class={[
+                  "w-3 h-3 rounded-full transition-all",
+                  idx == @current_index && "ring-2 ring-offset-1 ring-gray-400 scale-125",
+                  result.status == "pass" && "bg-green-500",
+                  result.status == "fail" && "bg-red-500",
+                  result.status == "skip" && "bg-gray-400",
+                  result.status == "pending" && "bg-gray-200"
+                ]}
+              />
+            </div>
+            <span class="text-sm text-gray-500 font-medium">
+              <%= @current_index + 1 %> / <%= length(@results) %>
             </span>
           </div>
-          <.button
-            :if={@progress.pending > 0}
-            phx-click="skip_remaining"
-            data-confirm="Mark all pending results as Skip?"
-            class="btn btn-sm btn-outline"
-          >
-            Skip remaining (<%= @progress.pending %>)
-          </.button>
         </div>
 
         <%!-- Progress bar --%>
-        <div class="rounded-lg border border-gray-200 p-4">
-          <div class="flex gap-6 text-sm mb-3">
+        <div class="space-y-1">
+          <div class="flex gap-4 text-xs text-gray-500">
             <span class="text-green-600 font-medium"><%= @progress.pass %> pass</span>
-            <span class="text-red-600 font-medium"><%= @progress.fail %> fail</span>
-            <span class="text-gray-500 font-medium"><%= @progress.skip %> skip</span>
+            <span class="text-red-500 font-medium"><%= @progress.fail %> fail</span>
+            <span class="text-gray-400"><%= @progress.skip %> skip</span>
             <span class="text-gray-400"><%= @progress.pending %> pending</span>
-            <span class="ml-auto text-gray-500"><%= @progress.total %> total</span>
           </div>
-          <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden flex">
+          <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden flex">
             <div
-              :if={@progress.total > 0}
               class="bg-green-500 h-full transition-all"
-              style={"width: #{@progress.pass * 100 / @progress.total}%"}
+              style={"width: #{if @progress.total > 0, do: @progress.pass * 100 / @progress.total, else: 0}%"}
             />
             <div
-              :if={@progress.total > 0}
               class="bg-red-500 h-full transition-all"
-              style={"width: #{@progress.fail * 100 / @progress.total}%"}
+              style={"width: #{if @progress.total > 0, do: @progress.fail * 100 / @progress.total, else: 0}%"}
             />
             <div
-              :if={@progress.total > 0}
               class="bg-gray-300 h-full transition-all"
-              style={"width: #{@progress.skip * 100 / @progress.total}%"}
+              style={"width: #{if @progress.total > 0, do: @progress.skip * 100 / @progress.total, else: 0}%"}
             />
           </div>
         </div>
 
-        <%!-- Results grouped by scenario --%>
-        <div :if={@results == []} class="text-center text-gray-500 py-8">
-          This run has no test cases.
+        <%!-- Case card --%>
+        <div class={[
+          "rounded-xl border-l-4 border border-gray-200 bg-white shadow",
+          current_result(@results, @current_index).status == "pass" && "border-l-green-500",
+          current_result(@results, @current_index).status == "fail" && "border-l-red-500",
+          current_result(@results, @current_index).status == "skip" && "border-l-gray-400",
+          current_result(@results, @current_index).status == "pending" && "border-l-gray-200"
+        ]}>
+          <%!-- Scenario + case name --%>
+          <div class="px-6 pt-6 pb-4 border-b border-gray-100">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+              <%= current_result(@results, @current_index).scenario_name %>
+            </p>
+            <h1 class="text-2xl font-bold text-gray-900">
+              <%= current_result(@results, @current_index).case_name %>
+            </h1>
+            <span :if={current_result(@results, @current_index).status != "pending"} class={[
+              "mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-medium",
+              current_result(@results, @current_index).status == "pass" && "bg-green-100 text-green-700",
+              current_result(@results, @current_index).status == "fail" && "bg-red-100 text-red-700",
+              current_result(@results, @current_index).status == "skip" && "bg-gray-100 text-gray-600"
+            ]}>
+              <%= current_result(@results, @current_index).status %>
+            </span>
+          </div>
+
+          <%!-- Steps --%>
+          <div class="px-6 py-5">
+            <div :if={Map.get(@steps_by_case, current_result(@results, @current_index).case_id, []) == []} class="text-sm text-gray-400 italic">
+              No steps defined for this case.
+            </div>
+            <div :if={Map.get(@steps_by_case, current_result(@results, @current_index).case_id, []) != []}>
+              <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Steps to follow</p>
+              <ol class="space-y-4">
+                <li
+                  :for={{step, idx} <- Enum.with_index(Map.get(@steps_by_case, current_result(@results, @current_index).case_id, []))}
+                  class="flex gap-4"
+                >
+                  <span class="shrink-0 mt-0.5 w-7 h-7 rounded-full bg-gray-100 text-gray-600 text-sm font-bold flex items-center justify-center">
+                    <%= idx + 1 %>
+                  </span>
+                  <div class="min-w-0 pt-0.5">
+                    <p class="text-base text-gray-800"><%= step.description %></p>
+                    <p :if={step.expected_result} class="mt-1 text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded px-3 py-1">
+                      Expected: <%= step.expected_result %>
+                    </p>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </div>
+
+          <%!-- Notes section --%>
+          <div class="px-6 pb-5 border-t border-gray-100 pt-4">
+            <%!-- Show existing notes --%>
+            <div :if={current_result(@results, @current_index).notes && !@show_notes} class="mb-3 flex items-start gap-2">
+              <p class="text-sm text-gray-600 italic flex-1 border-l-2 border-red-200 pl-2">
+                <%= current_result(@results, @current_index).notes %>
+              </p>
+              <button phx-click="show_notes" class="text-xs text-gray-400 hover:text-gray-700 underline shrink-0">edit</button>
+            </div>
+
+            <%!-- Notes form (shown after Fail, or via link) --%>
+            <div :if={@show_notes}>
+              <form phx-submit="save_notes" id="notes_form" class="space-y-2">
+                <input type="hidden" name="result_id" value={current_result(@results, @current_index).id} />
+                <textarea
+                  name="notes"
+                  placeholder="Describe what went wrong, observations, error messages..."
+                  rows="3"
+                  class="textarea textarea-bordered w-full text-sm"
+                  autofocus
+                ><%= current_result(@results, @current_index).notes %></textarea>
+                <div class="flex gap-2">
+                  <.button type="submit" phx-disable-with="Saving..." class="btn btn-sm btn-primary">
+                    Save notes
+                  </.button>
+                  <.button type="button" phx-click="dismiss_notes" class="btn btn-sm btn-ghost">
+                    Cancel
+                  </.button>
+                </div>
+              </form>
+            </div>
+
+            <%!-- "Add notes" link when no notes and form hidden --%>
+            <div :if={!current_result(@results, @current_index).notes && !@show_notes}>
+              <button phx-click="show_notes" class="text-xs text-gray-400 hover:text-gray-600 underline">
+                + add notes
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div :if={@results != []} class="space-y-8">
-          <section :for={{scenario_name, group} <- @grouped_results}>
-            <h2 class="text-base font-semibold text-gray-700 border-b border-gray-200 pb-2 mb-3">
-              <%= scenario_name %>
-            </h2>
+        <%!-- Action bar --%>
+        <div class="flex items-center gap-2">
+          <.button
+            phx-click="navigate"
+            phx-value-direction="prev"
+            disabled={@current_index == 0}
+            class="btn btn-outline btn-sm"
+          >
+            ← Prev
+          </.button>
 
-            <div class="space-y-3">
-              <div
-                :for={result <- group}
-                class={[
-                  "rounded-lg border-l-4 border border-gray-200 bg-white shadow-sm",
-                  result.status == "pass" && "border-l-green-500",
-                  result.status == "fail" && "border-l-red-500",
-                  result.status == "skip" && "border-l-gray-400",
-                  result.status == "pending" && "border-l-gray-200"
-                ]}
-              >
-                <%!-- Card header: case name + status buttons --%>
-                <div class="flex items-start justify-between gap-4 px-4 pt-4 pb-2">
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class={[
-                        "inline-block w-2 h-2 rounded-full shrink-0",
-                        result.status == "pass" && "bg-green-500",
-                        result.status == "fail" && "bg-red-500",
-                        result.status == "skip" && "bg-gray-400",
-                        result.status == "pending" && "bg-gray-300"
-                      ]} />
-                      <p class="font-semibold text-gray-900"><%= result.case_name %></p>
-                    </div>
-                  </div>
-                  <%!-- Status buttons --%>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <.button
-                      phx-click="set_status"
-                      phx-value-id={result.id}
-                      phx-value-status="pass"
-                      class={["btn btn-xs font-bold", result.status == "pass" && "btn-success", result.status != "pass" && "btn-outline"]}
-                      title="Pass"
-                    >
-                      ✓ Pass
-                    </.button>
-                    <.button
-                      phx-click="set_status"
-                      phx-value-id={result.id}
-                      phx-value-status="fail"
-                      class={["btn btn-xs font-bold", result.status == "fail" && "btn-error", result.status != "fail" && "btn-outline"]}
-                      title="Fail"
-                    >
-                      ✗ Fail
-                    </.button>
-                    <.button
-                      phx-click="set_status"
-                      phx-value-id={result.id}
-                      phx-value-status="skip"
-                      class={["btn btn-xs", result.status == "skip" && "btn-neutral", result.status != "skip" && "btn-outline"]}
-                      title="Skip"
-                    >
-                      ⊘ Skip
-                    </.button>
-                  </div>
-                </div>
+          <div class="flex-1" />
 
-                <%!-- Steps --%>
-                <div
-                  :if={Map.get(@steps_by_case, result.case_id, []) != []}
-                  class="mx-4 mb-3 rounded-md bg-gray-50 border border-gray-100 p-3"
-                >
-                  <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Steps</p>
-                  <ol class="space-y-3">
-                    <li
-                      :for={{step, idx} <- Enum.with_index(Map.get(@steps_by_case, result.case_id, []))}
-                      class="flex gap-3"
-                    >
-                      <span class="shrink-0 mt-0.5 w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs font-bold flex items-center justify-center">
-                        <%= idx + 1 %>
-                      </span>
-                      <div class="min-w-0">
-                        <p class="text-sm text-gray-800"><%= step.description %></p>
-                        <p :if={step.expected_result} class="mt-0.5 text-xs text-blue-700 bg-blue-50 rounded px-2 py-0.5 inline-block">
-                          Expected: <%= step.expected_result %>
-                        </p>
-                      </div>
-                    </li>
-                  </ol>
-                </div>
+          <.button
+            phx-click="mark_fail"
+            phx-value-id={current_result(@results, @current_index).id}
+            class={["btn btn-sm font-bold", current_result(@results, @current_index).status == "fail" && "btn-error", current_result(@results, @current_index).status != "fail" && "btn-outline btn-error"]}
+          >
+            ✗ Fail
+          </.button>
+          <.button
+            phx-click="mark_skip"
+            phx-value-id={current_result(@results, @current_index).id}
+            class={["btn btn-sm", current_result(@results, @current_index).status == "skip" && "btn-neutral", current_result(@results, @current_index).status != "skip" && "btn-outline"]}
+          >
+            ⊘ Skip
+          </.button>
+          <.button
+            phx-click="mark_pass"
+            phx-value-id={current_result(@results, @current_index).id}
+            class={["btn btn-sm font-bold", current_result(@results, @current_index).status == "pass" && "btn-success", current_result(@results, @current_index).status != "pass" && "btn-success btn-outline"]}
+          >
+            ✓ Pass →
+          </.button>
+        </div>
 
-                <%!-- Notes section --%>
-                <div class="px-4 pb-4">
-                  <%!-- Notes edit form --%>
-                  <div :if={@editing_result_id == result.id}>
-                    <form phx-submit="save_notes" id={"notes_form_#{result.id}"} class="space-y-2">
-                      <input type="hidden" name="result_id" value={result.id} />
-                      <textarea
-                        name="notes"
-                        placeholder="Notes, failure reason, observations..."
-                        rows="2"
-                        class="textarea textarea-bordered w-full text-sm"
-                      ><%= result.notes %></textarea>
-                      <div class="flex gap-2">
-                        <.button type="submit" phx-disable-with="Saving..." class="btn btn-primary btn-xs">
-                          Save notes
-                        </.button>
-                        <.button type="button" phx-click="cancel_notes" class="btn btn-xs">
-                          Cancel
-                        </.button>
-                      </div>
-                    </form>
-                  </div>
-                  <%!-- Notes display --%>
-                  <div :if={@editing_result_id != result.id} class="flex items-start gap-2">
-                    <p :if={result.notes} class="text-sm text-gray-600 italic flex-1 border-l-2 border-gray-300 pl-2">
-                      <%= result.notes %>
-                    </p>
-                    <button
-                      phx-click="edit_notes"
-                      phx-value-id={result.id}
-                      class="text-xs text-gray-400 hover:text-gray-700 underline shrink-0"
-                    >
-                      <%= if result.notes, do: "edit notes", else: "add notes" %>
-                    </button>
-                  </div>
-                </div>
-              </div>
+        <%!-- Keyboard hint --%>
+        <p class="text-center text-xs text-gray-400">
+          Pass advances automatically · use ← Prev to go back
+        </p>
+      </div>
+
+      <%!-- Summary screen --%>
+      <div :if={@results != [] && @current_index >= length(@results)} class="mx-auto max-w-2xl py-12 space-y-8">
+        <div class="text-center space-y-2">
+          <div class="text-5xl">✅</div>
+          <h1 class="text-3xl font-bold text-gray-900">Run Complete!</h1>
+          <p class="text-gray-500"><%= @run.name %></p>
+        </div>
+
+        <%!-- Summary counts --%>
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div class="rounded-lg bg-green-50 border border-green-200 p-4">
+            <p class="text-3xl font-bold text-green-600"><%= @progress.pass %></p>
+            <p class="text-sm text-green-700 mt-1">Passed</p>
+          </div>
+          <div class="rounded-lg bg-red-50 border border-red-200 p-4">
+            <p class="text-3xl font-bold text-red-600"><%= @progress.fail %></p>
+            <p class="text-sm text-red-700 mt-1">Failed</p>
+          </div>
+          <div class="rounded-lg bg-gray-50 border border-gray-200 p-4">
+            <p class="text-3xl font-bold text-gray-600"><%= @progress.skip %></p>
+            <p class="text-sm text-gray-600 mt-1">Skipped</p>
+          </div>
+        </div>
+
+        <%!-- Failed cases --%>
+        <div :if={@progress.fail > 0} class="space-y-3">
+          <h2 class="text-base font-semibold text-red-700">Failed Cases</h2>
+          <div class="divide-y divide-gray-100 rounded-lg border border-red-200">
+            <div :for={result <- Enum.filter(@results, &(&1.status == "fail"))} class="px-4 py-3">
+              <p class="font-medium text-gray-900"><%= result.case_name %></p>
+              <p class="text-xs text-gray-500 mt-0.5"><%= result.scenario_name %></p>
+              <p :if={result.notes} class="mt-1 text-sm text-red-700 italic border-l-2 border-red-300 pl-2">
+                <%= result.notes %>
+              </p>
+              <p :if={!result.notes} class="mt-1 text-xs text-gray-400 italic">No notes recorded</p>
             </div>
-          </section>
+          </div>
+        </div>
+
+        <%!-- Actions --%>
+        <div class="flex gap-3 justify-center">
+          <.link navigate={~p"/projects/#{@project.id}/runs"} class="btn btn-outline">
+            ← Back to Runs
+          </.link>
+          <.button phx-click="jump_to" phx-value-index="0" class="btn btn-ghost btn-sm">
+            Review from start
+          </.button>
         </div>
       </div>
     </Layouts.app>
@@ -216,46 +268,81 @@ defmodule DittoWeb.TestLive.RunShow do
     project = Projects.get_project_for_member!(user, pid)
     run = Testing.get_run!(id)
 
-    {:ok,
-     socket
-     |> assign(project: project, run: run, editing_result_id: nil)
-     |> reload()}
+    # Start at first pending case, or 0 if none pending
+    socket =
+      socket
+      |> assign(project: project, run: run, show_notes: false)
+      |> reload()
+
+    first_pending =
+      Enum.find_index(socket.assigns.results, &(&1.status == "pending")) || 0
+
+    {:ok, assign(socket, current_index: first_pending)}
   end
 
   @impl true
-  def handle_event("set_status", %{"id" => id, "status" => status}, socket) do
-    result = Repo.get!(Result, id)
-    user = socket.assigns.current_scope.user
-    {:ok, _} = Testing.update_result(result, user, %{"status" => status})
-    {:noreply, reload(socket)}
+  def handle_event("mark_pass", %{"id" => id}, socket) do
+    update_status(socket, id, "pass")
+    socket = reload(socket)
+    {:noreply, socket |> assign(show_notes: false) |> advance()}
   end
 
-  def handle_event("edit_notes", %{"id" => id}, socket) do
-    {:noreply, assign(socket, editing_result_id: id)}
+  def handle_event("mark_fail", %{"id" => id}, socket) do
+    update_status(socket, id, "fail")
+    {:noreply, socket |> reload() |> assign(show_notes: true)}
   end
 
-  def handle_event("cancel_notes", _params, socket) do
-    {:noreply, assign(socket, editing_result_id: nil)}
+  def handle_event("mark_skip", %{"id" => id}, socket) do
+    update_status(socket, id, "skip")
+    socket = reload(socket)
+    {:noreply, socket |> assign(show_notes: false) |> advance()}
   end
 
   def handle_event("save_notes", %{"result_id" => id, "notes" => notes}, socket) do
     result = Repo.get!(Result, id)
     user = socket.assigns.current_scope.user
     {:ok, _} = Testing.update_result(result, user, %{"status" => result.status, "notes" => notes})
-    {:noreply, socket |> assign(editing_result_id: nil) |> reload()}
+    {:noreply, socket |> reload() |> assign(show_notes: false)}
   end
 
-  def handle_event("skip_remaining", _params, socket) do
+  def handle_event("show_notes", _params, socket) do
+    {:noreply, assign(socket, show_notes: true)}
+  end
+
+  def handle_event("dismiss_notes", _params, socket) do
+    {:noreply, assign(socket, show_notes: false)}
+  end
+
+  def handle_event("navigate", %{"direction" => "next"}, socket) do
+    total = length(socket.assigns.results)
+    new_index = min(socket.assigns.current_index + 1, total)
+    {:noreply, assign(socket, current_index: new_index, show_notes: false)}
+  end
+
+  def handle_event("navigate", %{"direction" => "prev"}, socket) do
+    new_index = max(socket.assigns.current_index - 1, 0)
+    {:noreply, assign(socket, current_index: new_index, show_notes: false)}
+  end
+
+  def handle_event("jump_to", %{"index" => index}, socket) do
+    idx = String.to_integer(index)
+    total = length(socket.assigns.results)
+    safe_idx = max(0, min(idx, total))
+    {:noreply, assign(socket, current_index: safe_idx, show_notes: false)}
+  end
+
+  # Private helpers
+
+  defp update_status(socket, id, status) do
+    result = Repo.get!(Result, id)
     user = socket.assigns.current_scope.user
+    {:ok, _} = Testing.update_result(result, user, %{"status" => status})
+  end
 
-    socket.assigns.results
-    |> Enum.filter(&(&1.status == "pending"))
-    |> Enum.each(fn result_map ->
-      result = Repo.get!(Result, result_map.id)
-      Testing.update_result(result, user, %{"status" => "skip"})
-    end)
-
-    {:noreply, reload(socket)}
+  defp advance(socket) do
+    total = length(socket.assigns.results)
+    new_index = min(socket.assigns.current_index + 1, total)
+    assign(socket, current_index: new_index)
   end
 
   defp reload(socket) do
@@ -268,15 +355,10 @@ defmodule DittoWeb.TestLive.RunShow do
     assign(socket,
       run: run,
       results: results,
-      grouped_results: group_results(results),
       steps_by_case: steps_by_case,
       progress: progress
     )
   end
 
-  defp group_results(results) do
-    results
-    |> Enum.group_by(& &1.scenario_name)
-    |> Enum.to_list()
-  end
+  defp current_result(results, index), do: Enum.at(results, index)
 end
