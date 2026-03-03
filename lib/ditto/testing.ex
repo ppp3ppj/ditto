@@ -196,6 +196,18 @@ defmodule Ditto.Testing do
     swap_positions(Step, :case_id, step.case_id, step, :down)
   end
 
+  @doc "Returns steps for a list of case IDs, grouped by case_id."
+  def list_steps_by_case([]), do: %{}
+
+  def list_steps_by_case(case_ids) when is_list(case_ids) do
+    from(s in Step,
+      where: s.case_id in ^case_ids,
+      order_by: [asc: s.position, asc: s.inserted_at]
+    )
+    |> Repo.all()
+    |> Enum.group_by(& &1.case_id)
+  end
+
   ## Runs
 
   @doc "Returns all test runs for a project, newest first."
