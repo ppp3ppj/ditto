@@ -86,5 +86,61 @@ defmodule DittoWeb.ProjectLive.JoinTest do
       assert {:error, {:redirect, %{to: path}}} = live(conn, ~p"/projects/join/#{inv.token}")
       assert path == ~p"/users/log-in"
     end
+
+    test "shows project description when present", %{conn: conn} do
+      owner = user_fixture()
+      project = project_fixture(owner, %{"name" => "Desc Project", "description" => "A helpful description"})
+      inv = invitation_fixture(project, owner)
+
+      {:ok, _lv, html} = live(conn, ~p"/projects/join/#{inv.token}")
+      assert html =~ "A helpful description"
+    end
+
+    test "shows expired state when token expires between mount and join", %{conn: conn} do
+      owner = user_fixture()
+      project = project_fixture(owner)
+      inv = invitation_fixture(project, owner)
+
+      {:ok, lv, _html} = live(conn, ~p"/projects/join/#{inv.token}")
+
+      past = DateTime.add(DateTime.utc_now(:second), -3600, :second)
+      inv |> Ecto.Changeset.change(%{expires_at: past}) |> Ditto.Repo.update!()
+
+      html = lv |> element("button", "Join Project") |> render_click()
+      assert html =~ "Invite Link Expired"
+      refute html =~ "Join Project"
+    end
+
+    test "shows max uses state when limit is reached between mount and join", %{conn: conn} do
+      owner = user_fixture()
+      project = project_fixture(owner)
+      inv = invitation_fixture(project, owner, %{max_uses: 1})
+
+      {:ok, lv, _html} = live(conn, ~p"/projects/join/#{inv.token}")
+
+      inv |> Ecto.Changeset.change(%{uses_count: 1}) |> Ditto.Repo.update!()
+
+      html = lv |> element("button", "Join Project") |> render_click()
+      assert html =~ "Invite Link Full"
+      refute html =~ "Join Project"
+    end
+
+    test "redirects when already a member via join event", %{conn: conn, user: user} do
+      owner = user_fixture()
+      project = project_fixture(owner)
+      inv = invitation_fixture(project, owner)
+
+      {:ok, lv, _html} = live(conn, ~p"/projects/join/#{inv.token}")
+
+      Ditto.Projects.join_via_token(user, inv.token)
+
+      assert {:ok, _lv, html} =
+               lv
+               |> element("button", "Join Project")
+               |> render_click()
+               |> follow_redirect(conn)
+
+      assert html =~ project.name
+    end
   end
 end
