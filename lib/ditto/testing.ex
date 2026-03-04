@@ -250,6 +250,102 @@ defmodule Ditto.Testing do
   @doc "Deletes a test run (cascades to results)."
   def delete_run(%Run{} = run), do: Repo.delete(run)
 
+  @doc "Force-completes a run regardless of pending results."
+  def finish_run(%Run{} = run) do
+    now = DateTime.utc_now(:second)
+
+    from(r in Run, where: r.id == ^run.id)
+    |> Repo.update_all(set: [status: "completed", completed_at: now])
+
+    :ok
+  end
+
+  @doc "Returns all run names for a project (efficient name-only query)."
+  def list_run_names(%Project{} = project) do
+    from(r in Run, where: r.project_id == ^project.id, select: r.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Suggests the next rerun name given an original name and list of existing names.
+
+  Strips any existing " (rerun N)" suffix to get the base name, then finds the
+  highest used N and returns "base (rerun N+1)".
+  """
+  def next_rerun_name(original_name, existing_names) do
+    base =
+      case Regex.run(~r/^(.*) \(rerun \d+\)$/, original_name) do
+        [_full, captured_base] -> captured_base
+        nil -> original_name
+      end
+
+    used_numbers =
+      Enum.flat_map(existing_names, fn name ->
+        case Regex.run(~r/^#{Regex.escape(base)} \(rerun (\d+)\)$/, name) do
+          [_full, n_str] -> [String.to_integer(n_str)]
+          nil -> []
+        end
+      end)
+
+    next_n = if used_numbers == [], do: 1, else: Enum.max(used_numbers) + 1
+    "#{base} (rerun #{next_n})"
+  end
+
+  @doc "Returns per-filter case counts for the rerun modal preview."
+  def rerun_preview_counts(%Run{} = run) do
+    %{total: total, pass: pass, fail: fail, skip: skip} = run_progress(run)
+
+    %{
+      all: total,
+      failed: fail,
+      skipped: skip,
+      failed_and_skipped: fail + skip,
+      passed: pass
+    }
+  end
+
+  @doc """
+  Creates a new test run as a rerun of `original_run`.
+
+  `filter` is one of: `:all`, `:failed`, `:skipped`, `:failed_and_skipped`, `:passed`
+
+  Cases deleted since the original run are silently omitted.
+  """
+  def rerun_run(%Run{} = original_run, %User{} = creator, name, filter)
+      when filter in [:all, :failed, :skipped, :failed_and_skipped, :passed] do
+    Repo.transact(fn ->
+      original_results = list_results(original_run)
+
+      statuses_to_include =
+        case filter do
+          :all -> ["pass", "fail", "skip", "pending"]
+          :failed -> ["fail"]
+          :skipped -> ["skip"]
+          :failed_and_skipped -> ["fail", "skip"]
+          :passed -> ["pass"]
+        end
+
+      case_ids =
+        original_results
+        |> Enum.filter(&(&1.status in statuses_to_include))
+        |> Enum.map(& &1.case_id)
+
+      with {:ok, run} <-
+             %Run{}
+             |> Run.changeset(%{
+               name: name,
+               project_id: original_run.project_id,
+               created_by_id: creator.id,
+               status: "pending"
+             })
+             |> Repo.insert(),
+           cases <- gather_cases_from_ids(case_ids),
+           :ok <- insert_results(run, cases) do
+        {:ok, run}
+      end
+    end)
+  end
+
   ## Results
 
   @doc "Returns all results for a run, ordered by case position within scenario."
@@ -415,6 +511,18 @@ defmodule Ditto.Testing do
       from(r in Run, where: r.id == ^run_id and r.status == "pending")
       |> Repo.update_all(set: [status: "in_progress", started_at: DateTime.utc_now(:second)])
     end
+  end
+
+  defp gather_cases_from_ids([]), do: []
+
+  defp gather_cases_from_ids(case_ids) when is_list(case_ids) do
+    from(c in Case,
+      join: sc in Scenario,
+      on: sc.id == c.scenario_id,
+      where: c.id in ^case_ids,
+      order_by: [asc: sc.position, asc: sc.inserted_at, asc: c.position, asc: c.inserted_at]
+    )
+    |> Repo.all()
   end
 
   defp next_position(schema, parent_field, parent_id) do
