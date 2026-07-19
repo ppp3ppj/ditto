@@ -2,7 +2,7 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
-@import "phoenix-colocated/ditto/colocated.css";
+/*@import "phoenix-colocated/ditto/colocated.css";*/
 @source "../css";
 @source "../js";
 @source "../../lib/ditto_web";

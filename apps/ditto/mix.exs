@@ -73,9 +73,9 @@ defmodule Ditto.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["bun.install --if-missing", "bun qlock install"],
-      "assets.build": ["compile", "bun qlock run build"],
-      "assets.deploy": ["bun qlock run build", "phx.digest"],
+      "assets.setup": ["bun.install --if-missing", "bun ditto install"],
+      "assets.build": ["compile", "bun ditto run build"],
+      "assets.deploy": ["bun ditto run build", "phx.digest"],
       precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
     ]
   end

@@ -38,7 +38,7 @@ config :ditto, Ditto.Mailer, adapter: Swoosh.Adapters.Local
 
 config :bun,
   version: "1.1.38",
-  qlock: [
+  ditto: [
     cd: Path.expand("../assets", __DIR__)
   ]
 
