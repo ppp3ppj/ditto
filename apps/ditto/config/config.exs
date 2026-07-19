@@ -37,7 +37,7 @@ config :phoenix_live_view,
 config :ditto, Ditto.Mailer, adapter: Swoosh.Adapters.Local
 
 config :bun,
-  version: "1.1.38",
+  version: "1.3.14",
   ditto: [
     cd: Path.expand("../assets", __DIR__)
   ]
