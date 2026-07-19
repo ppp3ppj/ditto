@@ -22,8 +22,7 @@ config :ditto, DittoWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "XVNJJAiZXQce1RdvBCL9+qNssxUBU3lmnvzzf5ZUBhAdONiV6ZOiOEnbFJ14ZiXP",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:ditto, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:ditto, ~w(--watch)]}
+    bun: {Bun, :install_and_run, [:ditto, ~w(run dev)]}
   ]
 
 # ## SSL Support

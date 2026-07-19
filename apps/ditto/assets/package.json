@@ -1,10 +1,20 @@
 {
   "private": true,
+  "scripts": {
+    "build": "vite build",
+    "dev": "WATCH_STDIN=1 vite"
+  },
   "devDependencies": {
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "phoenix_live_view": "file:../deps/phoenix_live_view",
+    "daisyui": "^5.6.18",
+    "remixicon": "^4.9.1",
+    "topbar": "^3.0.1"
   },
   "peerDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.1.5"
   }
 }
