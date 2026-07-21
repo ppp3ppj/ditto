@@ -5,6 +5,8 @@ defmodule Ditto.Projects do
 
   import Ecto.Query, warn: false
   alias Ditto.Repo
+  alias Ditto.Accounts
+  alias Ditto.Accounts.Scope
 
   alias Ditto.Projects.Project
 
@@ -19,6 +21,22 @@ defmodule Ditto.Projects do
   """
   def list_projects do
     Repo.all(Project)
+  end
+
+  def list_projects(%Scope{user: %{id: user_id}}) do
+    Project
+    |> join(:left, [p], pm in assoc(p, :project_members))
+    |> where([p, pm], p.user_id == ^user_id or pm.user_id == ^user_id)
+    |> distinct(true)
+    |> order_by([p], asc: p.name)
+    |> Repo.all()
+  end
+
+  def list_owned_projects(%Scope{user: %{id: user_id}}) do
+    Project
+    |> where([p], p.user_id == ^user_id)
+    |> order_by([p], asc: p.name)
+    |> Repo.all()
   end
 
   @doc """
@@ -50,6 +68,14 @@ defmodule Ditto.Projects do
 
   """
   def create_project(attrs) do
+    %Project{}
+    |> Project.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def create_project(%Scope{user: %{id: user_id}}, attrs) do
+    attrs = Map.put(attrs, "user_id", user_id)
+
     %Project{}
     |> Project.changeset(attrs)
     |> Repo.insert()
@@ -117,6 +143,27 @@ defmodule Ditto.Projects do
     Repo.all(Category)
   end
 
+  def list_categories(scope, project_id \\ nil)
+
+  def list_categories(%Scope{} = scope, nil) do
+    scope
+    |> accessible_projects_query()
+    |> join(:inner, [p, ...], c in assoc(p, :categories))
+    |> order_by([..., c], asc: c.name)
+    |> select([..., c], c)
+    |> Repo.all()
+  end
+
+  def list_categories(%Scope{} = scope, project_id) do
+    scope
+    |> accessible_projects_query()
+    |> where([p], p.id == ^project_id)
+    |> join(:inner, [p, ...], c in assoc(p, :categories))
+    |> order_by([..., c], asc: c.name)
+    |> select([..., c], c)
+    |> Repo.all()
+  end
+
   @doc """
   Gets a single category.
 
@@ -149,6 +196,18 @@ defmodule Ditto.Projects do
     %Category{}
     |> Category.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def create_category(%Scope{} = scope, attrs) do
+    project_id = Map.get(attrs, "project_id") || Map.get(attrs, :project_id)
+
+    if project_accessible?(scope, project_id) do
+      %Category{}
+      |> Category.changeset(attrs)
+      |> Repo.insert()
+    else
+      {:error, unauthorized_changeset(%Category{}, :project_id)}
+    end
   end
 
   @doc """
@@ -213,6 +272,19 @@ defmodule Ditto.Projects do
     Repo.all(ProjectMember)
   end
 
+  def list_project_members(%Scope{} = scope, project_id) do
+    members =
+      scope
+      |> accessible_projects_query()
+      |> where([p], p.id == ^project_id)
+      |> join(:inner, [p, ...], pm in assoc(p, :project_members))
+      |> order_by([..., pm], asc: pm.inserted_at)
+      |> select([..., pm], pm)
+      |> Repo.all()
+
+    Repo.preload(members, [:user, :project])
+  end
+
   @doc """
   Gets a single project_member.
 
@@ -245,6 +317,22 @@ defmodule Ditto.Projects do
     %ProjectMember{}
     |> ProjectMember.changeset(attrs)
     |> Repo.insert()
+  end
+
+  def invite_project_member(%Scope{user: %{id: user_id}}, project_id, email)
+      when is_binary(project_id) and is_binary(email) do
+    with %Project{} <- Repo.get_by(Project, id: project_id, user_id: user_id),
+         %Accounts.User{} = invitee <- Accounts.get_user_by_email(email) do
+      %ProjectMember{}
+      |> ProjectMember.changeset(%{project_id: project_id, user_id: invitee.id})
+      |> Repo.insert()
+    else
+      nil ->
+        {:error, unauthorized_changeset(%ProjectMember{}, :project_id)}
+
+      _ ->
+        {:error, unauthorized_changeset(%ProjectMember{}, :user_id, "was not found")}
+    end
   end
 
   @doc """
@@ -292,5 +380,27 @@ defmodule Ditto.Projects do
   """
   def change_project_member(%ProjectMember{} = project_member, attrs \\ %{}) do
     ProjectMember.changeset(project_member, attrs)
+  end
+
+  defp accessible_projects_query(%Scope{user: %{id: user_id}}) do
+    Project
+    |> join(:left, [p], pm in assoc(p, :project_members))
+    |> where([p, pm], p.user_id == ^user_id or pm.user_id == ^user_id)
+    |> distinct(true)
+  end
+
+  defp project_accessible?(%Scope{} = scope, project_id) when is_binary(project_id) do
+    scope
+    |> accessible_projects_query()
+    |> where([p], p.id == ^project_id)
+    |> Repo.exists?()
+  end
+
+  defp project_accessible?(_scope, _project_id), do: false
+
+  defp unauthorized_changeset(struct, field, message \\ "is invalid") do
+    struct
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(field, message)
   end
 end
