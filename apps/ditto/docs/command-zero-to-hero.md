@@ -4,9 +4,15 @@ mix phx.auth.gen Accounts User users --hashing-lib argon2
 "I fixed a bug on T project, under Develop"
 "I had a meeting on T project, under Meeting"
 
+Beginning phase:
+- Each user can create a project and invite other users for free.
+- Collaboration is managed through `project_members`.
+
 Relations:
 - `User has_many :projects`
+- `User has_many :project_members`
 - `Project belongs_to :user`
+- `Project has_many :project_members`
 - `Project has_many :categories`
 - `Category belongs_to :project`
 - `TimeEntry belongs_to :user`
@@ -19,6 +25,11 @@ mix phx.gen.context Projects Project projects \
 
 mix phx.gen.context Projects Category categories \
   name:string project_id:references:projects --no-scope
+
+mix phx.gen.context Projects ProjectMember project_members \
+  user_id:references:users \
+  project_id:references:projects \
+  --no-scope
 
 mix phx.gen.context Tracking TimeEntry time_entries \
   date:date duration:integer note:text \
@@ -36,9 +47,16 @@ Why `--no-scope`:
 After generation, add uniqueness constraints:
 - `projects`: unique on `[:user_id, :name]`
 - `categories`: unique on `[:project_id, :name]`
+- `project_members`: unique on `[:user_id, :project_id]` (one user can join one project only once)
 
 Migration example:
 ```elixir
 create unique_index(:projects, [:user_id, :name])
 create unique_index(:categories, [:project_id, :name])
+create unique_index(:project_members, [:user_id, :project_id])
 ```
+
+`project_members` detail:
+- Use this table to support collaboration (many users in one project).
+- `projects.user_id` can stay as project owner/creator.
+- `project_members` stores membership rows (`user_id`, `project_id`) for owner + invited members.

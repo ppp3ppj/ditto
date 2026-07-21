@@ -135,4 +135,75 @@ defmodule Ditto.ProjectsTest do
       assert %Ecto.Changeset{} = Projects.change_category(category)
     end
   end
+
+  describe "project_members" do
+    alias Ditto.Projects.ProjectMember
+
+    import Ditto.ProjectsFixtures
+
+    @invalid_attrs %{user_id: nil, project_id: nil}
+
+    test "list_project_members/0 returns all project_members" do
+      project_member = project_member_fixture()
+      assert Projects.list_project_members() == [project_member]
+    end
+
+    test "get_project_member!/1 returns the project_member with given id" do
+      project_member = project_member_fixture()
+      assert Projects.get_project_member!(project_member.id) == project_member
+    end
+
+    test "create_project_member/1 with valid data creates a project_member" do
+      user = user_fixture()
+      project = project_fixture()
+      valid_attrs = %{user_id: user.id, project_id: project.id}
+
+      assert {:ok, %ProjectMember{} = _project_member} =
+               Projects.create_project_member(valid_attrs)
+    end
+
+    test "create_project_member/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Projects.create_project_member(@invalid_attrs)
+    end
+
+    test "update_project_member/2 with valid data updates the project_member" do
+      project_member = project_member_fixture()
+      user = user_fixture()
+      project = project_fixture()
+      update_attrs = %{user_id: user.id, project_id: project.id}
+
+      assert {:ok, %ProjectMember{} = _project_member} =
+               Projects.update_project_member(project_member, update_attrs)
+    end
+
+    test "update_project_member/2 with invalid data returns error changeset" do
+      project_member = project_member_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Projects.update_project_member(project_member, @invalid_attrs)
+
+      assert project_member == Projects.get_project_member!(project_member.id)
+    end
+
+    test "delete_project_member/1 deletes the project_member" do
+      project_member = project_member_fixture()
+      assert {:ok, %ProjectMember{}} = Projects.delete_project_member(project_member)
+      assert_raise Ecto.NoResultsError, fn -> Projects.get_project_member!(project_member.id) end
+    end
+
+    test "change_project_member/1 returns a project_member changeset" do
+      project_member = project_member_fixture()
+      assert %Ecto.Changeset{} = Projects.change_project_member(project_member)
+    end
+
+    test "create_project_member/1 enforces uniqueness per user/project pair" do
+      user = user_fixture()
+      project = project_fixture()
+      attrs = %{user_id: user.id, project_id: project.id}
+
+      assert {:ok, _project_member} = Projects.create_project_member(attrs)
+      assert {:error, changeset} = Projects.create_project_member(attrs)
+      assert "has already been taken" in errors_on(changeset).user_id
+    end
+  end
 end

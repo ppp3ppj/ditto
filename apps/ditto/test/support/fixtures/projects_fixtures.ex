@@ -39,4 +39,22 @@ defmodule Ditto.ProjectsFixtures do
 
     category
   end
+
+  @doc """
+  Generate a project_member.
+  """
+  def project_member_fixture(attrs \\ %{}) do
+    user = user_fixture()
+    project = project_fixture()
+
+    {:ok, project_member} =
+      attrs
+      |> Enum.into(%{
+        user_id: user.id,
+        project_id: project.id
+      })
+      |> Ditto.Projects.create_project_member()
+
+    project_member
+  end
 end

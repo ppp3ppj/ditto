@@ -7,6 +7,7 @@ defmodule Ditto.Projects.Project do
   schema "projects" do
     field :name, :string
     belongs_to :user, Ditto.Accounts.User
+    has_many :project_members, Ditto.Projects.ProjectMember
     has_many :categories, Ditto.Projects.Category
     has_many :time_entries, Ditto.Tracking.TimeEntry
 

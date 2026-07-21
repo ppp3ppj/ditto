@@ -14,6 +14,7 @@ defmodule Ditto.Accounts.User do
     field :authenticated_at, :utc_datetime, virtual: true
 
     has_many :projects, Ditto.Projects.Project
+    has_many :project_members, Ditto.Projects.ProjectMember
     has_many :time_entries, Ditto.Tracking.TimeEntry
 
     timestamps(type: :utc_datetime)
