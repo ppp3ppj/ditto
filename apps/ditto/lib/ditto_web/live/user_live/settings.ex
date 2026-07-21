@@ -65,6 +65,16 @@ defmodule DittoWeb.UserLive.Settings do
           Save Password
         </.button>
       </.form>
+
+      <div class="divider" />
+
+      <section class="space-y-3">
+        <.header>
+          Theme
+          <:subtitle>Choose system, light, or dark mode.</:subtitle>
+        </.header>
+        <Layouts.theme_toggle />
+      </section>
     </Layouts.app>
     """
   end

@@ -9,9 +9,23 @@ defmodule DittoWeb.WorkspaceLive.Index do
     socket =
       socket
       |> assign_forms()
+      |> assign(:section, :projects)
       |> load_workspace_data()
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(_params, _url, socket) do
+    section =
+      case socket.assigns.live_action do
+        :categories -> :categories
+        :members -> :members
+        :time_entries -> :time_entries
+        _ -> :projects
+      end
+
+    {:noreply, assign(socket, :section, section)}
   end
 
   @impl true
@@ -112,10 +126,32 @@ defmodule DittoWeb.WorkspaceLive.Index do
           <div class="card-body p-4">
             <p class="text-xs uppercase tracking-wide text-base-content/60">Workspace</p>
             <ul class="menu w-full">
-              <li><a href="#projects"><.icon name="ri-folder-line" /> Projects</a></li>
-              <li><a href="#categories"><.icon name="ri-price-tag-3-line" /> Categories</a></li>
-              <li><a href="#members"><.icon name="ri-team-line" /> Members</a></li>
-              <li><a href="#time-entries"><.icon name="ri-time-line" /> Time Entries</a></li>
+              <li>
+                <.link navigate={~p"/workspace/projects"} class={menu_link_class(@section, :projects)}>
+                  <.icon name="ri-folder-line" /> Projects
+                </.link>
+              </li>
+              <li>
+                <.link
+                  navigate={~p"/workspace/categories"}
+                  class={menu_link_class(@section, :categories)}
+                >
+                  <.icon name="ri-price-tag-3-line" /> Categories
+                </.link>
+              </li>
+              <li>
+                <.link navigate={~p"/workspace/members"} class={menu_link_class(@section, :members)}>
+                  <.icon name="ri-team-line" /> Members
+                </.link>
+              </li>
+              <li>
+                <.link
+                  navigate={~p"/workspace/time-entries"}
+                  class={menu_link_class(@section, :time_entries)}
+                >
+                  <.icon name="ri-time-line" /> Time Entries
+                </.link>
+              </li>
               <li class="mt-3">
                 <a href={~p"/users/settings"}><.icon name="ri-settings-3-line" /> Settings</a>
               </li>
@@ -133,7 +169,7 @@ defmodule DittoWeb.WorkspaceLive.Index do
             </div>
           </div>
 
-          <div id="projects" class="card bg-base-100 border border-base-300 shadow-sm">
+          <div :if={@section == :projects} class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body gap-4">
               <h2 class="card-title"><.icon name="ri-folder-add-line" /> Add Project</h2>
               <.form for={@project_form} phx-submit="save_project">
@@ -163,7 +199,7 @@ defmodule DittoWeb.WorkspaceLive.Index do
             </div>
           </div>
 
-          <div id="categories" class="card bg-base-100 border border-base-300 shadow-sm">
+          <div :if={@section == :categories} class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body gap-4">
               <h2 class="card-title"><.icon name="ri-price-tag-3-line" /> Add Category</h2>
               <.form for={@category_form} phx-submit="save_category">
@@ -199,7 +235,7 @@ defmodule DittoWeb.WorkspaceLive.Index do
             </div>
           </div>
 
-          <div id="members" class="card bg-base-100 border border-base-300 shadow-sm">
+          <div :if={@section == :members} class="card bg-base-100 border border-base-300 shadow-sm">
             <div class="card-body gap-4">
               <h2 class="card-title"><.icon name="ri-user-add-line" /> Invite Member</h2>
               <.form for={@member_form} phx-submit="invite_member" phx-change="change_member_project">
@@ -236,7 +272,10 @@ defmodule DittoWeb.WorkspaceLive.Index do
             </div>
           </div>
 
-          <div id="time-entries" class="card bg-base-100 border border-base-300 shadow-sm">
+          <div
+            :if={@section == :time_entries}
+            class="card bg-base-100 border border-base-300 shadow-sm"
+          >
             <div class="card-body gap-4">
               <h2 class="card-title"><.icon name="ri-time-line" /> Track Time</h2>
               <.form
@@ -403,4 +442,10 @@ defmodule DittoWeb.WorkspaceLive.Index do
       "category_id" => ""
     }
   end
+
+  defp menu_link_class(active_section, section) when active_section == section do
+    "active bg-base-300"
+  end
+
+  defp menu_link_class(_active_section, _section), do: ""
 end
