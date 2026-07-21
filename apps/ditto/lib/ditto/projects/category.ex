@@ -6,7 +6,8 @@ defmodule Ditto.Projects.Category do
   @foreign_key_type :binary_id
   schema "categories" do
     field :name, :string
-    field :project_id, :binary_id
+    belongs_to :project, Ditto.Projects.Project
+    has_many :time_entries, Ditto.Tracking.TimeEntry
 
     timestamps(type: :utc_datetime)
   end
@@ -14,7 +15,9 @@ defmodule Ditto.Projects.Category do
   @doc false
   def changeset(category, attrs) do
     category
-    |> cast(attrs, [:name])
-    |> validate_required([:name])
+    |> cast(attrs, [:name, :project_id])
+    |> validate_required([:name, :project_id])
+    |> unique_constraint(:name, name: :categories_project_id_name_index)
+    |> foreign_key_constraint(:project_id)
   end
 end

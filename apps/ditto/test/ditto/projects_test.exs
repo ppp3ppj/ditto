@@ -2,13 +2,14 @@ defmodule Ditto.ProjectsTest do
   use Ditto.DataCase
 
   alias Ditto.Projects
+  import Ditto.AccountsFixtures
 
   describe "projects" do
     alias Ditto.Projects.Project
 
     import Ditto.ProjectsFixtures
 
-    @invalid_attrs %{name: nil}
+    @invalid_attrs %{name: nil, user_id: nil}
 
     test "list_projects/0 returns all projects" do
       project = project_fixture()
@@ -21,7 +22,8 @@ defmodule Ditto.ProjectsTest do
     end
 
     test "create_project/1 with valid data creates a project" do
-      valid_attrs = %{name: "some name"}
+      user = user_fixture()
+      valid_attrs = %{name: "some name", user_id: user.id}
 
       assert {:ok, %Project{} = project} = Projects.create_project(valid_attrs)
       assert project.name == "some name"
@@ -29,6 +31,16 @@ defmodule Ditto.ProjectsTest do
 
     test "create_project/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Projects.create_project(@invalid_attrs)
+    end
+
+    test "create_project/1 enforces uniqueness of name per user" do
+      user = user_fixture()
+      assert {:ok, _project} = Projects.create_project(%{name: "T project", user_id: user.id})
+
+      assert {:error, changeset} =
+               Projects.create_project(%{name: "T project", user_id: user.id})
+
+      assert "has already been taken" in errors_on(changeset).name
     end
 
     test "update_project/2 with valid data updates the project" do
@@ -62,7 +74,7 @@ defmodule Ditto.ProjectsTest do
 
     import Ditto.ProjectsFixtures
 
-    @invalid_attrs %{name: nil}
+    @invalid_attrs %{name: nil, project_id: nil}
 
     test "list_categories/0 returns all categories" do
       category = category_fixture()
@@ -75,7 +87,8 @@ defmodule Ditto.ProjectsTest do
     end
 
     test "create_category/1 with valid data creates a category" do
-      valid_attrs = %{name: "some name"}
+      project = project_fixture()
+      valid_attrs = %{name: "some name", project_id: project.id}
 
       assert {:ok, %Category{} = category} = Projects.create_category(valid_attrs)
       assert category.name == "some name"
@@ -83,6 +96,18 @@ defmodule Ditto.ProjectsTest do
 
     test "create_category/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Projects.create_category(@invalid_attrs)
+    end
+
+    test "create_category/1 enforces uniqueness of name per project" do
+      project = project_fixture()
+
+      assert {:ok, _category} =
+               Projects.create_category(%{name: "Develop", project_id: project.id})
+
+      assert {:error, changeset} =
+               Projects.create_category(%{name: "Develop", project_id: project.id})
+
+      assert "has already been taken" in errors_on(changeset).name
     end
 
     test "update_category/2 with valid data updates the category" do

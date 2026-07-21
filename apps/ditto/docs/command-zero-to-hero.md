@@ -3,6 +3,16 @@ mix phx.auth.gen Accounts User users --hashing-lib argon2
 1. Context is Clear
 "I fixed a bug on T project, under Develop"
 "I had a meeting on T project, under Meeting"
+
+Relations:
+- `User has_many :projects`
+- `Project belongs_to :user`
+- `Project has_many :categories`
+- `Category belongs_to :project`
+- `TimeEntry belongs_to :user`
+- `TimeEntry belongs_to :project`
+- `TimeEntry belongs_to :category`
+
 Commands:
 mix phx.gen.context Projects Project projects \
   name:string user_id:references:users --no-scope
@@ -23,7 +33,12 @@ Why `--no-scope`:
   `Reference :user_id has the same name as the scope schema key`.
 - `--no-scope` disables that scoped behavior so you can keep explicit `user_id` fields.
 
-after:
-  Add uniqueness constraints after generation:
-     - `projects`: unique on `[:user_id, :name]`
-     - `categories`: unique on `[:project_id, :name]`
+After generation, add uniqueness constraints:
+- `projects`: unique on `[:user_id, :name]`
+- `categories`: unique on `[:project_id, :name]`
+
+Migration example:
+```elixir
+create unique_index(:projects, [:user_id, :name])
+create unique_index(:categories, [:project_id, :name])
+```

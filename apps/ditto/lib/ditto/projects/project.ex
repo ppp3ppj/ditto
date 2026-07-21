@@ -6,7 +6,9 @@ defmodule Ditto.Projects.Project do
   @foreign_key_type :binary_id
   schema "projects" do
     field :name, :string
-    field :user_id, :binary_id
+    belongs_to :user, Ditto.Accounts.User
+    has_many :categories, Ditto.Projects.Category
+    has_many :time_entries, Ditto.Tracking.TimeEntry
 
     timestamps(type: :utc_datetime)
   end
@@ -14,7 +16,9 @@ defmodule Ditto.Projects.Project do
   @doc false
   def changeset(project, attrs) do
     project
-    |> cast(attrs, [:name])
-    |> validate_required([:name])
+    |> cast(attrs, [:name, :user_id])
+    |> validate_required([:name, :user_id])
+    |> unique_constraint(:name, name: :projects_user_id_name_index)
+    |> foreign_key_constraint(:user_id)
   end
 end

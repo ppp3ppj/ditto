@@ -4,14 +4,19 @@ defmodule Ditto.ProjectsFixtures do
   entities via the `Ditto.Projects` context.
   """
 
+  import Ditto.AccountsFixtures, only: [user_fixture: 0]
+
   @doc """
   Generate a project.
   """
   def project_fixture(attrs \\ %{}) do
+    user = user_fixture()
+
     {:ok, project} =
       attrs
       |> Enum.into(%{
-        name: "some name"
+        name: "some name",
+        user_id: user.id
       })
       |> Ditto.Projects.create_project()
 
@@ -22,10 +27,13 @@ defmodule Ditto.ProjectsFixtures do
   Generate a category.
   """
   def category_fixture(attrs \\ %{}) do
+    project = project_fixture()
+
     {:ok, category} =
       attrs
       |> Enum.into(%{
-        name: "some name"
+        name: "some name",
+        project_id: project.id
       })
       |> Ditto.Projects.create_category()
 
