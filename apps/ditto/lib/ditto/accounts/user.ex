@@ -5,6 +5,8 @@ defmodule Ditto.Accounts.User do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "users" do
+    field :first_name, :string
+    field :last_name,  :string
     field :email, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
@@ -13,6 +15,8 @@ defmodule Ditto.Accounts.User do
 
     timestamps(type: :utc_datetime)
   end
+
+  def full_name(%__MODULE__{first_name: f, last_name: l}), do: "#{f} #{l}"
 
   @doc """
   A user changeset for registering or changing the email.
