@@ -50,6 +50,59 @@ defmodule DittoWeb.Layouts do
   end
 
   @doc """
+  Renders the app layout with the pinned icon-only rail (Home + Settings),
+  shared by `HomeLive` and `ProjectLive.Show`.
+
+  ## Examples
+
+      <Layouts.app_with_rail flash={@flash} current_scope={@current_scope} active={:home}>
+        <h1>Content</h1>
+      </Layouts.app_with_rail>
+
+  """
+  attr :flash, :map, required: true, doc: "the map of flash messages"
+
+  attr :current_scope, :map,
+    default: nil,
+    doc: "the current [scope](https://phoenix.hexdocs.pm/scopes.html)"
+
+  attr :active, :atom, values: [:home, :project], default: :home, doc: "which rail icon is active"
+
+  attr :container_class, :string,
+    default: "mx-auto max-w-5xl space-y-4",
+    doc: "class for the main content container"
+
+  slot :inner_block, required: true
+
+  def app_with_rail(assigns) do
+    ~H"""
+    <div class="flex min-h-screen">
+      <aside class="w-14 bg-base-300 flex flex-col items-center py-4 gap-4 shrink-0">
+        <.icon name="ri-book-2-line" class="size-6 text-primary" />
+        <div class="divider my-0 w-8" />
+        <.link
+          navigate={~p"/home"}
+          class={["p-2 rounded-lg", @active == :home && "bg-base-100", @active != :home && "opacity-60 hover:opacity-100"]}
+        >
+          <.icon name="ri-home-4-line" class="size-5" />
+        </.link>
+        <.link navigate={~p"/users/settings"} class="p-2 rounded-lg opacity-60 hover:opacity-100">
+          <.icon name="ri-settings-3-line" class="size-5" />
+        </.link>
+      </aside>
+
+      <div class="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <div class={@container_class}>
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </div>
+
+    <.flash_group flash={@flash} />
+    """
+  end
+
+  @doc """
   Shows the flash group with standard titles and content.
 
   ## Examples

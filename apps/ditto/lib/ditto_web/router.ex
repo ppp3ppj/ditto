@@ -52,11 +52,11 @@ defmodule DittoWeb.Router do
 
     live_session :require_authenticated_user,
       on_mount: [{DittoWeb.UserAuth, :require_authenticated}] do
-      live "/workspace", WorkspaceLive.Index, :projects
-      live "/workspace/projects", WorkspaceLive.Index, :projects
-      live "/workspace/categories", WorkspaceLive.Index, :categories
-      live "/workspace/members", WorkspaceLive.Index, :members
-      live "/workspace/time-entries", WorkspaceLive.Index, :time_entries
+      live "/home", HomeLive, :index
+      live "/projects/:id", ProjectLive.Show, :members
+      live "/projects/:id/members", ProjectLive.Show, :members
+      live "/projects/:id/categories", ProjectLive.Show, :categories
+      live "/projects/:id/time-entries", ProjectLive.Show, :time_entries
       live "/users/settings", UserLive.Settings, :edit
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end

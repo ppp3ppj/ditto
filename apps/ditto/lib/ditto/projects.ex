@@ -56,6 +56,19 @@ defmodule Ditto.Projects do
   def get_project!(id), do: Repo.get!(Project, id)
 
   @doc """
+  Gets a single project the given scope can access, preloaded with its owner.
+
+  Raises `Ecto.NoResultsError` if the project doesn't exist or isn't accessible.
+  """
+  def get_accessible_project!(%Scope{} = scope, id) do
+    scope
+    |> accessible_projects_query()
+    |> where([p], p.id == ^id)
+    |> Repo.one!()
+    |> Repo.preload(:user)
+  end
+
+  @doc """
   Creates a project.
 
   ## Examples

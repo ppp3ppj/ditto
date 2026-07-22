@@ -31,6 +31,18 @@ defmodule Ditto.Tracking do
     |> Repo.all()
   end
 
+  def list_time_entries(%Scope{} = scope, project_id) when is_binary(project_id) do
+    if project_accessible_by_user?(scope.user.id, project_id) do
+      TimeEntry
+      |> where([t], t.project_id == ^project_id)
+      |> preload([:project, :category, :user])
+      |> order_by([t], desc: t.date, desc: t.inserted_at)
+      |> Repo.all()
+    else
+      []
+    end
+  end
+
   @doc """
   Gets a single time_entry.
 
